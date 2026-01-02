@@ -53,6 +53,12 @@ COPY --chown=agent:agent voice_agent.py ./
 COPY --chown=agent:agent prompt/ ./prompt/
 COPY --chown=agent:agent models/ ./models/
 
+# Copy OpenWakeWord resource models to the package location
+# These are required for the melspectrogram and embedding preprocessors
+RUN mkdir -p /app/.venv/lib/python3.11/site-packages/openwakeword/resources/models && \
+    cp /app/models/melspectrogram.onnx /app/models/embedding_model.onnx \
+    /app/.venv/lib/python3.11/site-packages/openwakeword/resources/models/
+
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1

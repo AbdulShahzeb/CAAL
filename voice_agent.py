@@ -245,6 +245,14 @@ async def entrypoint(ctx: agents.JobContext) -> None:
         api_key="not-needed",  # Speaches doesn't require auth
         model=WHISPER_MODEL,
     )
+    # Wrap the base STT's stream method to trace calls
+    _original_stream = base_stt.stream
+    def _traced_stream(*args, **kwargs):
+        import traceback
+        logger.info("openai.STT.stream() called directly!")
+        logger.info(f"Call stack:\n{''.join(traceback.format_stack()[:10])}")
+        return _original_stream(*args, **kwargs)
+    base_stt.stream = _traced_stream
 
     # Load wake word settings
     all_settings = settings_module.load_settings()
@@ -306,6 +314,8 @@ async def entrypoint(ctx: agents.JobContext) -> None:
         logger.info("  Wake word: disabled")
 
     # Create session with Speaches STT and Kokoro TTS (both OpenAI-compatible)
+    logger.info(f"  STT instance type: {type(stt_instance).__name__}")
+    logger.info(f"  STT capabilities: streaming={stt_instance.capabilities.streaming}")
     session = AgentSession(
         stt=stt_instance,
         llm=ollama_llm,
@@ -317,6 +327,7 @@ async def entrypoint(ctx: agents.JobContext) -> None:
         ),
         vad=silero.VAD.load(),
     )
+    logger.info(f"  Session STT: {type(session.stt).__name__}")
 
     # Set session reference for wake word callback
     _session_ref = session

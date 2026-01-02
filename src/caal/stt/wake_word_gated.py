@@ -1,4 +1,8 @@
-"""Wake word gated STT wrapper using OpenWakeWord."""
+"""Wake word gated STT wrapper using OpenWakeWord.
+
+Uses StreamAdapter for inner STT (since Speaches doesn't support WebSocket streaming).
+Wake word detection gates when audio gets forwarded to the StreamAdapter.
+"""
 
 from __future__ import annotations
 
@@ -18,6 +22,7 @@ from livekit.agents.stt import (
     SpeechEventType,
     STT,
     STTCapabilities,
+    StreamAdapter,
 )
 from livekit.agents.types import (
     DEFAULT_API_CONNECT_OPTIONS,
@@ -25,7 +30,8 @@ from livekit.agents.types import (
     APIConnectOptions,
     NotGivenOr,
 )
-from livekit.agents.utils import AudioBuffer, aio
+from livekit.agents.utils import aio
+from livekit.plugins import silero
 from openwakeword.model import Model as OWWModel
 
 logger = logging.getLogger(__name__)
@@ -74,7 +80,13 @@ class WakeWordGatedSTT(STT):
             on_wake_detected: Callback when wake word is detected (e.g., trigger greeting).
             on_state_changed: Callback when state changes (for publishing to clients).
         """
-        super().__init__(capabilities=inner_stt.capabilities)
+        logger.info(f"WakeWordGatedSTT.__init__ called - inner_stt={type(inner_stt).__name__}")
+        # Override capabilities to indicate we support streaming
+        # Even though the inner STT may not support streaming, WE provide streaming
+        # by gating audio through wake word detection before forwarding to inner STT
+        super().__init__(
+            capabilities=STTCapabilities(streaming=True, interim_results=False)
+        )
         self._inner = inner_stt
         self._model_path = model_path
         self._threshold = threshold
@@ -95,7 +107,10 @@ class WakeWordGatedSTT(STT):
         """Lazy-load the OpenWakeWord model."""
         if self._oww is None:
             logger.info(f"Loading OpenWakeWord model from {self._model_path}")
-            self._oww = OWWModel(wakeword_models=[self._model_path])
+            self._oww = OWWModel(
+                wakeword_models=[self._model_path],
+                inference_framework="onnx",  # Use ONNX for .onnx models
+            )
             logger.info("OpenWakeWord model loaded")
         return self._oww
 
@@ -118,6 +133,7 @@ class WakeWordGatedSTT(STT):
         language: NotGivenOr[str] = NOT_GIVEN,
         conn_options: APIConnectOptions = DEFAULT_API_CONNECT_OPTIONS,
     ) -> RecognizeStream:
+        logger.info(">>> WakeWordGatedSTT.stream() CALLED <<<")
         return WakeWordGatedStream(
             stt=self,
             inner_stt=self._inner,
@@ -135,7 +151,15 @@ class WakeWordGatedSTT(STT):
 
 
 class WakeWordGatedStream(RecognizeStream):
-    """Streaming STT that gates audio through wake word detection."""
+    """Streaming STT that gates audio through wake word detection.
+
+    Uses StreamAdapter for inner STT since Speaches doesn't support WebSocket streaming.
+    Flow:
+    1. LISTENING: Run wake word detection on all audio, discard if no trigger
+    2. Wake word detected: Switch to ACTIVE, trigger greeting callback
+    3. ACTIVE: Forward audio to StreamAdapter (which handles VAD + batch STT)
+    4. Silence timeout: Return to LISTENING
+    """
 
     # OpenWakeWord expects 16kHz mono audio, 80ms chunks (1280 samples)
     OWW_SAMPLE_RATE = 16000
@@ -167,16 +191,18 @@ class WakeWordGatedStream(RecognizeStream):
         self._on_wake_detected = on_wake_detected
         self._on_state_changed = on_state_changed
         self._language = language
+        self._conn_options = conn_options
 
         self._state = WakeWordState.LISTENING
-        self._audio_buffer: list[np.ndarray] = []
+        self._oww_buffer: list[np.ndarray] = []  # Buffer for wake word detection
         self._last_speech_time: float = 0.0
+        self._inner_stream: RecognizeStream | None = None
 
     async def _set_state(self, state: WakeWordState) -> None:
         """Update state and notify callback."""
         if self._state != state:
             self._state = state
-            logger.debug(f"Wake word state changed to: {state.value}")
+            logger.info(f"Wake word state changed to: {state.value}")
             if self._on_state_changed:
                 try:
                     await self._on_state_changed(state)
@@ -185,44 +211,51 @@ class WakeWordGatedStream(RecognizeStream):
 
     async def _run(self) -> None:
         """Main processing loop."""
-        inner_stream: RecognizeStream | None = None
-        forward_task: asyncio.Task[None] | None = None
+        logger.info("WakeWordGatedStream._run() started")
 
-        async def _forward_to_inner() -> None:
-            """Forward audio frames to inner STT when active."""
-            nonlocal inner_stream
-            assert inner_stream is not None
+        # Create StreamAdapter to wrap the non-streaming STT with VAD
+        vad = silero.VAD.load()
+        stream_adapter = StreamAdapter(stt=self._inner_stt, vad=vad)
 
+        # Get a stream from the adapter
+        self._inner_stream = stream_adapter.stream(
+            language=self._language,
+            conn_options=self._conn_options,
+        )
+
+        # Set initial state
+        await self._set_state(WakeWordState.LISTENING)
+
+        async def _process_audio() -> None:
+            """Process incoming audio frames."""
             async for data in self._input_ch:
                 if isinstance(data, self._FlushSentinel):
-                    inner_stream.flush()
+                    if self._state == WakeWordState.ACTIVE:
+                        self._inner_stream.flush()
                     continue
 
                 frame: rtc.AudioFrame = data
 
-                # Check for wake word or process active conversation
                 if self._state == WakeWordState.LISTENING:
                     await self._process_wake_word(frame)
                 else:
-                    # Active mode - forward to inner STT
-                    inner_stream.push_frame(frame)
-                    self._last_speech_time = time.time()
+                    # Active mode - forward to StreamAdapter
+                    self._inner_stream.push_frame(frame)
 
-            inner_stream.end_input()
+            # End input when done
+            self._inner_stream.end_input()
 
         async def _read_inner_events() -> None:
-            """Read events from inner STT and forward them."""
-            nonlocal inner_stream
-            assert inner_stream is not None
-
-            async for event in inner_stream:
+            """Read events from inner StreamAdapter and forward them."""
+            async for event in self._inner_stream:
                 self._event_ch.send_nowait(event)
-
-                # Check for end of speech to potentially return to listening
-                if event.type == SpeechEventType.FINAL_TRANSCRIPT:
-                    # After final transcript, check if we should return to listening
-                    # This happens after the timeout in _monitor_silence
-                    pass
+                # Reset silence timer on any speech event (STT activity)
+                if event.type in (
+                    SpeechEventType.START_OF_SPEECH,
+                    SpeechEventType.INTERIM_TRANSCRIPT,
+                    SpeechEventType.FINAL_TRANSCRIPT,
+                ):
+                    self._last_speech_time = time.time()
 
         async def _monitor_silence() -> None:
             """Monitor for silence timeout to return to listening mode."""
@@ -232,7 +265,7 @@ class WakeWordGatedStream(RecognizeStream):
                 if self._state == WakeWordState.ACTIVE:
                     elapsed = time.time() - self._last_speech_time
                     if elapsed >= self._silence_timeout:
-                        logger.debug(
+                        logger.info(
                             f"Silence timeout ({self._silence_timeout}s), "
                             "returning to wake word listening"
                         )
@@ -240,17 +273,8 @@ class WakeWordGatedStream(RecognizeStream):
                         # Reset OpenWakeWord model state for fresh detection
                         self._oww.reset()
 
-        # Create inner stream
-        inner_stream = self._inner_stt.stream(
-            language=self._language,
-            conn_options=self._conn_options,
-        )
-
-        # Set initial state
-        await self._set_state(WakeWordState.LISTENING)
-
         tasks = [
-            asyncio.create_task(_forward_to_inner(), name="forward_to_inner"),
+            asyncio.create_task(_process_audio(), name="process_audio"),
             asyncio.create_task(_read_inner_events(), name="read_inner_events"),
             asyncio.create_task(_monitor_silence(), name="monitor_silence"),
         ]
@@ -259,8 +283,8 @@ class WakeWordGatedStream(RecognizeStream):
             await asyncio.gather(*tasks)
         finally:
             await aio.cancel_and_wait(*tasks)
-            if inner_stream:
-                await inner_stream.aclose()
+            if self._inner_stream:
+                await self._inner_stream.aclose()
 
     async def _process_wake_word(self, frame: rtc.AudioFrame) -> None:
         """Process audio frame for wake word detection."""
@@ -272,18 +296,18 @@ class WakeWordGatedStream(RecognizeStream):
             audio_data = audio_data[::frame.num_channels]
 
         # Accumulate audio until we have enough for OpenWakeWord
-        self._audio_buffer.append(audio_data)
-        total_samples = sum(len(chunk) for chunk in self._audio_buffer)
+        self._oww_buffer.append(audio_data)
+        total_samples = sum(len(chunk) for chunk in self._oww_buffer)
 
         # Process when we have enough samples (80ms chunks)
         while total_samples >= self.OWW_CHUNK_SAMPLES:
             # Concatenate and take exactly what we need
-            combined = np.concatenate(self._audio_buffer)
+            combined = np.concatenate(self._oww_buffer)
             chunk = combined[: self.OWW_CHUNK_SAMPLES]
 
             # Keep remainder for next iteration
             remainder = combined[self.OWW_CHUNK_SAMPLES :]
-            self._audio_buffer = [remainder] if len(remainder) > 0 else []
+            self._oww_buffer = [remainder] if len(remainder) > 0 else []
             total_samples = len(remainder)
 
             # Run wake word detection
@@ -305,10 +329,5 @@ class WakeWordGatedStream(RecognizeStream):
                             await self._on_wake_detected()
                         except Exception as e:
                             logger.warning(f"Error in on_wake_detected callback: {e}")
-
-                    # Emit start of speech event
-                    self._event_ch.send_nowait(
-                        SpeechEvent(type=SpeechEventType.START_OF_SPEECH)
-                    )
 
                     return

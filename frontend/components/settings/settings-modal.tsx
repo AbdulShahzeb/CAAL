@@ -53,7 +53,7 @@ Always prefer using tools to answer questions when possible.
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [promptContent, setPromptContent] = useState('');
-  const [_customPromptExists, setCustomPromptExists] = useState(false);
+  const [, setCustomPromptExists] = useState(false);
   const [voices, setVoices] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -369,7 +369,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     onClick={() =>
                       setSettings({ ...settings, wake_word_enabled: !settings.wake_word_enabled })
                     }
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:ring-2 focus:ring-offset-2 focus:outline-none ${
                       settings.wake_word_enabled ? 'bg-primary' : 'bg-muted'
                     }`}
                   >
@@ -423,7 +423,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
               {/* Note about session restart */}
               <p className="text-muted-foreground text-xs">
-                Note: Model, context size, prompt, and wake word changes take effect on next session.
+                Note: Model, context size, prompt, and wake word changes take effect on next
+                session.
               </p>
             </>
           )}
