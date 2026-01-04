@@ -58,14 +58,11 @@ export async function POST(req: Request) {
     const forwardedProto = req.headers.get('x-forwarded-proto');
     const isHttps = forwardedProto === 'https' || req.url.startsWith('https://');
 
-    if (LIVEKIT_PUBLIC_URL && LIVEKIT_PUBLIC_URL.startsWith('wss://')) {
-      // Explicit wss:// URL configured - use it directly (remote LiveKit server)
-      serverUrl = LIVEKIT_PUBLIC_URL;
-    } else if (isHttps && LIVEKIT_PUBLIC_URL) {
-      // Tailscale/HTTPS mode - use configured URL
+    if (isHttps && LIVEKIT_PUBLIC_URL) {
+      // HTTPS request - use configured secure URL (Tailscale/distributed mode)
       serverUrl = LIVEKIT_PUBLIC_URL;
     } else {
-      // LAN/HTTP mode - derive from request host
+      // HTTP request - derive ws:// from request host for LAN access
       const host = req.headers.get('host') || 'localhost';
       const hostname = host.split(':')[0]; // Remove port if present
       serverUrl = `ws://${hostname}:7880`;
