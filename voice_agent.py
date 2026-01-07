@@ -109,7 +109,8 @@ def get_runtime_settings() -> dict:
         "llm_provider": user_settings.get("llm_provider") or os.getenv("LLM_PROVIDER", "ollama"),
         "temperature": settings.get("temperature", float(os.getenv("OLLAMA_TEMPERATURE", "0.7"))),
         # Ollama settings
-        "model": user_settings.get("model") or os.getenv("OLLAMA_MODEL", "ministral-3:8b"),
+        "ollama_host": user_settings.get("ollama_host") or os.getenv("OLLAMA_HOST", "http://localhost:11434"),
+        "ollama_model": user_settings.get("ollama_model") or os.getenv("OLLAMA_MODEL", "ministral-3:8b"),
         "num_ctx": settings.get("num_ctx", int(os.getenv("OLLAMA_NUM_CTX", "8192"))),
         "think": OLLAMA_THINK,  # Only applies to Ollama
         # Groq settings
@@ -192,17 +193,8 @@ class VoiceAssistant(WebSearchTools, Agent):
 
 async def entrypoint(ctx: agents.JobContext) -> None:
     """Main entrypoint for the voice agent."""
-
-    # Start webhook server in the same event loop (first job only)
-    global _webhook_server_task
-    if _webhook_server_task is None:
-        _webhook_server_task = asyncio.create_task(start_webhook_server())
-        # Brief delay to check if server started successfully
-        await asyncio.sleep(0.5)
-        if _webhook_server_task.done():
-            exc = _webhook_server_task.exception()
-            if exc:
-                logger.error(f"Webhook server failed to start: {exc}")
+    # Note: Webhook server is started in background thread at agent startup (main block)
+    # This ensures /setup/status is available before users connect
 
     logger.debug(f"Joining room: {ctx.room.name}")
     await ctx.connect()
@@ -254,7 +246,7 @@ async def entrypoint(ctx: agents.JobContext) -> None:
     logger.info(f"  TTS: {KOKORO_URL} ({runtime['tts_voice']})")
     if runtime["llm_provider"] == "ollama":
         logger.info(
-            f"  LLM: Ollama ({runtime['model']}, think={runtime['think']}, num_ctx={runtime['num_ctx']})"
+            f"  LLM: Ollama ({runtime['ollama_model']}, think={runtime['think']}, num_ctx={runtime['num_ctx']})"
         )
     else:
         logger.info(
@@ -536,20 +528,18 @@ def preload_models():
 
 
 # =============================================================================
-# Webhook Server
+# Webhook Server (runs in background thread)
 # =============================================================================
 
 WEBHOOK_PORT = int(os.getenv("WEBHOOK_PORT", "8889"))
 
-# Global reference to webhook server task (started in entrypoint)
-_webhook_server_task: asyncio.Task | None = None
 
+def run_webhook_server_sync():
+    """Run webhook server in a separate thread (blocking).
 
-async def start_webhook_server():
-    """Start FastAPI webhook server in the current event loop.
-
-    This runs the webhook server in the same event loop as the LiveKit agent,
-    avoiding cross-thread async issues that cause 200x slower MCP calls.
+    This starts the webhook server immediately on agent startup,
+    so /setup/status and other endpoints are available before
+    any user connects.
     """
     import uvicorn
     from caal.webhooks import app
@@ -558,11 +548,11 @@ async def start_webhook_server():
         app,
         host="0.0.0.0",
         port=WEBHOOK_PORT,
-        log_level="warning",
+        log_level="info",
     )
     server = uvicorn.Server(config)
-    logger.debug(f"Starting webhook server on port {WEBHOOK_PORT}")
-    await server.serve()
+    logger.info(f"Starting webhook server on port {WEBHOOK_PORT}")
+    server.run()
 
 
 # =============================================================================
@@ -570,6 +560,12 @@ async def start_webhook_server():
 # =============================================================================
 
 if __name__ == "__main__":
+    import threading
+
+    # Start webhook server in background thread (available immediately)
+    webhook_thread = threading.Thread(target=run_webhook_server_sync, daemon=True)
+    webhook_thread.start()
+
     # Preload models before starting worker
     preload_models()
 

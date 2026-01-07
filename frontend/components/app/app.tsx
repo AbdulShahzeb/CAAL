@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { TokenSource } from 'livekit-client';
 import { SessionProvider, StartAudio, useSession } from '@livekit/components-react';
 import type { AppConfig } from '@/app-config';
@@ -8,6 +8,7 @@ import { AgentAudioRenderer } from '@/components/app/agent-audio-renderer';
 import { ViewController } from '@/components/app/view-controller';
 import { WakeWordProvider } from '@/components/app/wake-word-provider';
 import { Toaster } from '@/components/livekit/toaster';
+import { SetupWizard } from '@/components/setup';
 // import { useAgentErrors } from '@/hooks/useAgentErrors';
 import { useDebugMode } from '@/hooks/useDebug';
 import { getSandboxTokenSource } from '@/lib/utils';
@@ -29,6 +30,39 @@ interface AppProps {
 }
 
 export function App({ appConfig }: AppProps) {
+  const [setupCompleted, setSetupCompleted] = useState<boolean | null>(null);
+  const [showSetupWizard, setShowSetupWizard] = useState(false);
+
+  // Check setup status on mount
+  useEffect(() => {
+    const checkSetup = async () => {
+      try {
+        const res = await fetch('/api/setup/status');
+        const data = await res.json();
+        setSetupCompleted(data.completed ?? false);
+      } catch {
+        // If we can't reach the backend, assume setup not completed
+        setSetupCompleted(false);
+      }
+    };
+    checkSetup();
+  }, []);
+
+  const handleSetupComplete = () => {
+    setSetupCompleted(true);
+    setShowSetupWizard(false);
+    // Reload the page to pick up new settings
+    window.location.reload();
+  };
+
+  const handleOpenSettings = () => {
+    setShowSetupWizard(true);
+  };
+
+  const handleCloseSettings = () => {
+    setShowSetupWizard(false);
+  };
+
   const tokenSource = useMemo(() => {
     return typeof process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT === 'string'
       ? getSandboxTokenSource(appConfig)
@@ -82,6 +116,20 @@ export function App({ appConfig }: AppProps) {
     }
   }, [session]);
 
+  // Show loading state while checking setup status
+  if (setupCompleted === null) {
+    return (
+      <main className="grid h-svh grid-cols-1 place-content-center">
+        <div className="text-muted-foreground text-center">Loading...</div>
+      </main>
+    );
+  }
+
+  // Show setup wizard if not completed
+  if (!setupCompleted) {
+    return <SetupWizard onComplete={handleSetupComplete} />;
+  }
+
   return (
     <SessionProvider session={session}>
       <WakeWordProvider
@@ -92,11 +140,14 @@ export function App({ appConfig }: AppProps) {
       >
         <AppSetup />
         <main className="grid h-svh grid-cols-1 place-content-center">
-          <ViewController appConfig={appConfig} />
+          <ViewController appConfig={appConfig} onOpenSettings={handleOpenSettings} />
         </main>
         <StartAudio label="Start Audio" />
         <AgentAudioRenderer />
         <Toaster />
+        {showSetupWizard && (
+          <SetupWizard onComplete={handleSetupComplete} onCancel={handleCloseSettings} />
+        )}
       </WakeWordProvider>
     </SessionProvider>
   );

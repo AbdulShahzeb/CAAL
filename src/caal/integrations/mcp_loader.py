@@ -1,6 +1,7 @@
 """MCP Server Configuration Loader
 
-Loads MCP server definitions from environment variables and optional JSON config file.
+Loads MCP server definitions from settings, environment variables, and optional JSON config file.
+Settings take priority, then env vars, then JSON file.
 """
 
 import json
@@ -8,7 +9,7 @@ import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from livekit.agents import mcp
 
@@ -25,13 +26,18 @@ class MCPServerConfig:
     timeout: float = 10.0
 
 
-def load_mcp_config() -> list[MCPServerConfig]:
-    """Load MCP server configurations from env vars and optional JSON file.
+def load_mcp_config(settings: dict[str, Any] | None = None) -> list[MCPServerConfig]:
+    """Load MCP server configurations from settings, env vars, and optional JSON file.
 
-    n8n is loaded from environment variables (foundational).
-    Additional MCP servers can be configured in mcp_servers.json.
+    Priority order:
+    1. Settings (from frontend/settings.json)
+    2. Environment variables
+    3. JSON config file (mcp_servers.json)
 
-    Environment variables:
+    Args:
+        settings: Optional settings dict. If not provided, attempts to load from settings module.
+
+    Environment variables (fallback):
         N8N_MCP_URL: n8n MCP server URL
         N8N_MCP_TOKEN: Bearer token for n8n (optional)
         N8N_MCP_TIMEOUT: Request timeout in seconds (optional, default 10.0)
@@ -54,19 +60,35 @@ def load_mcp_config() -> list[MCPServerConfig]:
     """
     servers = []
 
-    # 1. n8n MCP Server from env (foundational)
-    n8n_url = os.environ.get("N8N_MCP_URL")
+    # Try to load settings if not provided
+    if settings is None:
+        try:
+            from .. import settings as settings_module
+            settings = settings_module.load_settings()
+        except Exception:
+            settings = {}
+
+    # 1. n8n MCP Server - settings first, then env vars
+    n8n_enabled = settings.get("n8n_enabled", False)
+    n8n_url = settings.get("n8n_url") if n8n_enabled else None
+    n8n_token = settings.get("n8n_token") if n8n_enabled else None
+
+    # Fall back to env vars if settings not configured
+    if not n8n_url:
+        n8n_url = os.environ.get("N8N_MCP_URL")
+        n8n_token = os.environ.get("N8N_MCP_TOKEN")
+
     if n8n_url:
         servers.append(MCPServerConfig(
             name="n8n",
             url=n8n_url,
-            auth_token=os.environ.get("N8N_MCP_TOKEN"),
+            auth_token=n8n_token,
             transport="streamable_http",  # n8n uses /http suffix which needs explicit transport
             timeout=float(os.environ.get("N8N_MCP_TIMEOUT", "10.0")),
         ))
         logger.debug(f"Loaded MCP server config: n8n ({n8n_url})")
     else:
-        logger.info("N8N_MCP_URL not set - n8n MCP tools will not be available")
+        logger.info("n8n not configured - n8n MCP tools will not be available")
 
     # 2. Additional MCP servers from JSON config (optional)
     config_path = Path("mcp_servers.json")

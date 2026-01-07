@@ -330,9 +330,10 @@ async def get_settings() -> SettingsResponse:
     """Get current settings and prompt content.
 
     Returns:
-        SettingsResponse with current settings, prompt content, and custom prompt status
+        SettingsResponse with current settings, prompt content, and custom prompt status.
+        Sensitive keys (tokens) are excluded for security.
     """
-    settings = settings_module.load_settings()
+    settings = settings_module.load_settings_safe()  # Excludes sensitive keys
     prompt_content = settings_module.load_prompt_content()
     custom_exists = settings_module.custom_prompt_exists()
 
@@ -596,3 +597,348 @@ async def get_wake_word_models() -> WakeWordModelsResponse:
                 models.append(f"models/{f.name}")
 
     return WakeWordModelsResponse(models=sorted(models))
+
+
+# =============================================================================
+# Setup Wizard Endpoints
+# =============================================================================
+
+
+class SetupStatusResponse(BaseModel):
+    """Response body for /setup/status endpoint."""
+
+    completed: bool
+
+
+class SetupCompleteRequest(BaseModel):
+    """Request body for /setup/complete endpoint."""
+
+    llm_provider: str  # "ollama" | "groq"
+    # Ollama settings
+    ollama_host: str | None = None
+    ollama_model: str | None = None
+    # Groq settings
+    groq_api_key: str | None = None
+    groq_model: str | None = None
+    # Integrations (optional)
+    hass_enabled: bool = False
+    hass_host: str | None = None
+    hass_token: str | None = None
+    n8n_enabled: bool = False
+    n8n_url: str | None = None
+    n8n_token: str | None = None
+    # Prompt preset
+    prompt: str = "default"  # "default" | "hass" | "custom"
+
+
+class SetupCompleteResponse(BaseModel):
+    """Response body for /setup/complete endpoint."""
+
+    success: bool
+    message: str
+
+
+class TestConnectionResponse(BaseModel):
+    """Response body for connection test endpoints."""
+
+    success: bool
+    error: str | None = None
+    models: list[str] | None = None  # For Ollama
+    device_count: int | None = None  # For Home Assistant
+    workflow_count: int | None = None  # For n8n
+
+
+class TestOllamaRequest(BaseModel):
+    """Request body for /setup/test-ollama endpoint."""
+
+    host: str
+
+
+class TestGroqRequest(BaseModel):
+    """Request body for /setup/test-groq endpoint."""
+
+    api_key: str
+
+
+class TestHassRequest(BaseModel):
+    """Request body for /setup/test-hass endpoint."""
+
+    host: str
+    token: str
+
+
+class TestN8nRequest(BaseModel):
+    """Request body for /setup/test-n8n endpoint."""
+
+    url: str
+    token: str | None = None
+
+
+@app.get("/setup/status", response_model=SetupStatusResponse)
+async def get_setup_status() -> SetupStatusResponse:
+    """Check if first-launch setup has been completed.
+
+    Returns:
+        SetupStatusResponse with completed flag
+    """
+    settings = settings_module.load_settings()
+    return SetupStatusResponse(completed=settings.get("first_launch_completed", False))
+
+
+@app.post("/setup/complete", response_model=SetupCompleteResponse)
+async def complete_setup(req: SetupCompleteRequest) -> SetupCompleteResponse:
+    """Complete the first-launch setup wizard.
+
+    Saves all settings and marks setup as completed.
+    UI sets both stt_provider and llm_provider together based on llm_provider choice.
+
+    Args:
+        req: SetupCompleteRequest with provider and integration settings
+
+    Returns:
+        SetupCompleteResponse with success status
+    """
+    try:
+        current = settings_module.load_settings()
+
+        # Provider settings - UI couples STT and LLM together
+        current["llm_provider"] = req.llm_provider
+        if req.llm_provider == "groq":
+            current["stt_provider"] = "groq"
+            if req.groq_model:
+                current["groq_model"] = req.groq_model
+        else:
+            current["stt_provider"] = "speaches"
+            if req.ollama_host:
+                current["ollama_host"] = req.ollama_host
+            if req.ollama_model:
+                current["ollama_model"] = req.ollama_model
+
+        # Home Assistant integration
+        current["hass_enabled"] = req.hass_enabled
+        if req.hass_enabled:
+            if req.hass_host:
+                current["hass_host"] = req.hass_host
+            if req.hass_token:
+                current["hass_token"] = req.hass_token
+
+        # n8n integration
+        current["n8n_enabled"] = req.n8n_enabled
+        if req.n8n_enabled:
+            if req.n8n_url:
+                current["n8n_url"] = req.n8n_url
+            if req.n8n_token:
+                current["n8n_token"] = req.n8n_token
+
+        # Prompt preset
+        if req.prompt in ("default", "hass", "custom"):
+            current["prompt"] = req.prompt
+
+        # Mark setup as complete
+        current["first_launch_completed"] = True
+
+        # Save settings
+        settings_module.save_settings(current)
+
+        # Store Groq API key in environment (not in settings.json for security)
+        if req.groq_api_key:
+            os.environ["GROQ_API_KEY"] = req.groq_api_key
+            # TODO: Persist to .env file or secure storage
+
+        logger.info("First-launch setup completed")
+        return SetupCompleteResponse(success=True, message="Setup completed successfully")
+
+    except Exception as e:
+        logger.error(f"Setup failed: {e}")
+        return SetupCompleteResponse(success=False, message=str(e))
+
+
+@app.post("/setup/test-ollama", response_model=TestConnectionResponse)
+async def test_ollama(req: TestOllamaRequest) -> TestConnectionResponse:
+    """Test Ollama connection and list available models.
+
+    Args:
+        req: TestOllamaRequest with host URL
+
+    Returns:
+        TestConnectionResponse with success status and model list
+    """
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{req.host}/api/tags",
+                timeout=10.0,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            models = [m.get("name") for m in data.get("models", [])]
+            models = [m for m in models if m]
+
+            return TestConnectionResponse(success=True, models=models)
+    except httpx.ConnectError:
+        return TestConnectionResponse(
+            success=False, error=f"Cannot connect to Ollama at {req.host}"
+        )
+    except Exception as e:
+        return TestConnectionResponse(success=False, error=str(e))
+
+
+@app.post("/setup/test-groq", response_model=TestConnectionResponse)
+async def test_groq(req: TestGroqRequest) -> TestConnectionResponse:
+    """Test Groq API key validity.
+
+    Args:
+        req: TestGroqRequest with API key
+
+    Returns:
+        TestConnectionResponse with success status
+    """
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://api.groq.com/openai/v1/models",
+                headers={"Authorization": f"Bearer {req.api_key}"},
+                timeout=10.0,
+            )
+            if response.status_code == 401:
+                return TestConnectionResponse(success=False, error="Invalid API key")
+            response.raise_for_status()
+
+            data = response.json()
+            models = [m.get("id") for m in data.get("data", [])]
+            models = [m for m in models if m]
+
+            return TestConnectionResponse(success=True, models=models)
+    except Exception as e:
+        return TestConnectionResponse(success=False, error=str(e))
+
+
+@app.post("/setup/test-hass", response_model=TestConnectionResponse)
+async def test_hass(req: TestHassRequest) -> TestConnectionResponse:
+    """Test Home Assistant connection.
+
+    Args:
+        req: TestHassRequest with host and token
+
+    Returns:
+        TestConnectionResponse with success status and device count
+    """
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{req.host}/api/states",
+                headers={"Authorization": f"Bearer {req.token}"},
+                timeout=10.0,
+            )
+            if response.status_code == 401:
+                return TestConnectionResponse(
+                    success=False, error="Invalid access token"
+                )
+            response.raise_for_status()
+
+            states = response.json()
+            device_count = len(states)
+
+            return TestConnectionResponse(success=True, device_count=device_count)
+    except httpx.ConnectError:
+        return TestConnectionResponse(
+            success=False, error=f"Cannot connect to Home Assistant at {req.host}"
+        )
+    except Exception as e:
+        return TestConnectionResponse(success=False, error=str(e))
+
+
+@app.post("/setup/test-n8n", response_model=TestConnectionResponse)
+async def test_n8n(req: TestN8nRequest) -> TestConnectionResponse:
+    """Test n8n MCP connection.
+
+    Args:
+        req: TestN8nRequest with URL and optional token
+
+    Returns:
+        TestConnectionResponse with success status and workflow count
+    """
+    try:
+        headers = {}
+        if req.token:
+            headers["Authorization"] = f"Bearer {req.token}"
+
+        async with httpx.AsyncClient() as client:
+            # Try to connect to n8n MCP endpoint
+            response = await client.get(
+                req.url,
+                headers=headers,
+                timeout=10.0,
+            )
+            # n8n MCP might return various status codes, just check connectivity
+            if response.status_code == 401:
+                return TestConnectionResponse(
+                    success=False, error="Invalid authentication token"
+                )
+
+            # Try to get workflow count if possible
+            # n8n MCP discovery happens via SSE, so we just verify connectivity
+            return TestConnectionResponse(success=True, workflow_count=0)
+    except httpx.ConnectError:
+        return TestConnectionResponse(
+            success=False, error=f"Cannot connect to n8n at {req.url}"
+        )
+    except Exception as e:
+        return TestConnectionResponse(success=False, error=str(e))
+
+
+# =============================================================================
+# Prewarm Endpoint
+# =============================================================================
+
+
+class PrewarmResponse(BaseModel):
+    """Response body for /prewarm endpoint."""
+
+    status: str
+    message: str
+
+
+@app.post("/prewarm", response_model=PrewarmResponse)
+async def prewarm() -> PrewarmResponse:
+    """Trigger model preloading for Ollama.
+
+    This endpoint triggers the preload_models() function to warm up
+    the STT and LLM models. It returns immediately - preloading happens
+    in background.
+
+    Returns:
+        PrewarmResponse with status
+    """
+    settings = settings_module.load_settings()
+
+    # Only prewarm if using Ollama
+    if settings.get("llm_provider", "ollama") != "ollama":
+        return PrewarmResponse(
+            status="skipped",
+            message="Prewarm only applies to Ollama provider",
+        )
+
+    # Import and call preload in background
+    import asyncio
+
+    async def do_prewarm():
+        try:
+            # Import here to avoid circular imports
+            from voice_agent import preload_models
+
+            ollama_host = settings.get("ollama_host", "http://localhost:11434")
+            ollama_model = settings.get("ollama_model", "ministral-3:8b")
+            await preload_models(ollama_host, ollama_model)
+            logger.info("Model prewarm completed")
+        except Exception as e:
+            logger.error(f"Prewarm failed: {e}")
+
+    # Fire and forget
+    asyncio.create_task(do_prewarm())
+
+    return PrewarmResponse(
+        status="started",
+        message="Model preloading started in background",
+    )

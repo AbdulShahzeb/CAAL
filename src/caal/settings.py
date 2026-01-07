@@ -30,9 +30,12 @@ SETTINGS_PATH = Path(os.getenv("CAAL_SETTINGS_PATH", _SCRIPT_DIR / "settings.jso
 PROMPT_DIR = Path(os.getenv("CAAL_PROMPT_DIR", _SCRIPT_DIR / "prompt"))
 
 DEFAULT_SETTINGS = {
+    # First-launch flag
+    "first_launch_completed": False,
+    # Agent identity
     "agent_name": "Cal",
     "tts_voice": "am_puck",
-    "prompt": "default",  # "default" or "custom"
+    "prompt": "default",  # "default" | "hass" | "custom"
     "wake_greetings": [
         "Hey, what's up?",
         "Hi there!",
@@ -42,16 +45,24 @@ DEFAULT_SETTINGS = {
         "Yo!",
         "What's up?",
     ],
-    # STT Provider settings
-    "stt_provider": "speaches",  # "speaches" or "groq"
-    # LLM Provider settings
-    "llm_provider": "ollama",  # "ollama" or "groq"
+    # Provider settings (UI sets both together, but stored separately for power users)
+    "stt_provider": "speaches",  # "speaches" | "groq"
+    "llm_provider": "ollama",  # "ollama" | "groq"
     "temperature": 0.7,
     # Ollama settings
-    "model": "ministral-3:8b",
+    "ollama_host": "http://localhost:11434",
+    "ollama_model": "ministral-3:8b",
     "num_ctx": 8192,
-    # Groq settings (api key via GROQ_API_KEY env var)
+    # Groq settings (api key stored separately, not returned via GET /settings)
     "groq_model": "llama-3.3-70b-versatile",
+    # Home Assistant integration
+    "hass_enabled": False,
+    "hass_host": "",
+    "hass_token": "",  # Long-lived access token
+    # n8n integration
+    "n8n_enabled": False,
+    "n8n_url": "",
+    "n8n_token": "",
     # Shared settings
     "max_turns": 20,
     "tool_cache_size": 3,
@@ -61,6 +72,9 @@ DEFAULT_SETTINGS = {
     "wake_word_threshold": 0.5,
     "wake_word_timeout": 3.0,  # seconds of silence before returning to listening
 }
+
+# Keys that should never be returned via API (security)
+SENSITIVE_KEYS = {"hass_token", "n8n_token"}
 
 # Cached settings (reloaded on save)
 _settings_cache: dict | None = None
@@ -88,6 +102,25 @@ def load_settings() -> dict:
             for key in DEFAULT_SETTINGS:
                 if key in user_settings:
                     settings[key] = user_settings[key]
+
+            # Migration: existing users who upgraded from before first_launch_completed existed.
+            # They would have a settings file with values that differ from defaults.
+            # Skip migration if first_launch_completed is already set (either true or false).
+            if "first_launch_completed" not in user_settings:
+                # Check if user has customized beyond default values (not just having the keys)
+                # A true existing user would have changed ollama_host or n8n_url
+                env_configured = (
+                    os.getenv("OLLAMA_HOST") and user_settings.get("ollama_host") or
+                    os.getenv("N8N_MCP_URL") and user_settings.get("n8n_url")
+                )
+                if env_configured:
+                    settings["first_launch_completed"] = True
+                    # Migrate .env values to settings
+                    settings = _migrate_env_to_settings(settings)
+                    # Save migrated settings
+                    save_settings(settings)
+                    logger.info("Migrated existing user settings")
+
             logger.debug(f"Loaded settings from {SETTINGS_PATH}")
         except Exception as e:
             logger.warning(f"Failed to load settings from {SETTINGS_PATH}: {e}")
@@ -95,6 +128,43 @@ def load_settings() -> dict:
         logger.debug(f"No settings file at {SETTINGS_PATH}, using defaults")
 
     _settings_cache = settings
+    return settings
+
+
+def _migrate_env_to_settings(settings: dict) -> dict:
+    """Migrate .env values to settings for existing users.
+
+    Args:
+        settings: Current settings dict
+
+    Returns:
+        Settings with .env values migrated
+    """
+    # Ollama settings
+    if ollama_host := os.getenv("OLLAMA_HOST"):
+        settings["ollama_host"] = ollama_host
+    if ollama_model := os.getenv("OLLAMA_MODEL"):
+        settings["ollama_model"] = ollama_model
+
+    # n8n settings
+    if n8n_url := os.getenv("N8N_MCP_URL"):
+        settings["n8n_enabled"] = True
+        settings["n8n_url"] = n8n_url
+    if n8n_token := os.getenv("N8N_MCP_TOKEN"):
+        settings["n8n_token"] = n8n_token
+
+    return settings
+
+
+def load_settings_safe() -> dict:
+    """Load settings without sensitive keys (for API responses).
+
+    Returns:
+        Settings dict with sensitive keys removed.
+    """
+    settings = load_settings().copy()
+    for key in SENSITIVE_KEYS:
+        settings.pop(key, None)
     return settings
 
 
@@ -189,7 +259,7 @@ def load_prompt_content(prompt_name: str | None = None) -> str:
     """Load raw prompt content from file.
 
     Args:
-        prompt_name: "default" or "custom". If None, uses settings["prompt"].
+        prompt_name: "default", "hass", or "custom". If None, uses settings["prompt"].
 
     Returns:
         Prompt file content, or default content if file doesn't exist.
@@ -201,6 +271,11 @@ def load_prompt_content(prompt_name: str | None = None) -> str:
 
     # If custom doesn't exist, fall back to default
     if prompt_name == "custom" and not prompt_path.exists():
+        prompt_path = get_prompt_path("default")
+
+    # If hass doesn't exist, fall back to default
+    if prompt_name == "hass" and not prompt_path.exists():
+        logger.warning("hass.md prompt not found, falling back to default")
         prompt_path = get_prompt_path("default")
 
     try:
