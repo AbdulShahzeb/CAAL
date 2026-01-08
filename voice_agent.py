@@ -56,22 +56,33 @@ from caal.llm import llm_node, ToolDataCache
 from caal import session_registry
 from caal.stt import WakeWordGatedSTT
 
-# Configure logging (LiveKit CLI reconfigures root logger, so set our level explicitly)
-logging.basicConfig(level=logging.INFO, format="%(message)s", force=True)
+# Configure logging - LiveKit adds LogQueueHandler to root in worker processes,
+# so we use non-propagating loggers with our own handler to avoid duplicates
+_log_handler = logging.StreamHandler()
+_log_handler.setFormatter(logging.Formatter("%(message)s"))
+
+# voice-agent logger (this file)
 logger = logging.getLogger("voice-agent")
 logger.setLevel(logging.INFO)
+logger.propagate = False
+logger.addHandler(_log_handler)
+
+# caal package logger (src/caal/*)
+_caal_logger = logging.getLogger("caal")
+_caal_logger.setLevel(logging.INFO)
+_caal_logger.propagate = False
+_caal_logger.addHandler(_log_handler)
 
 # Suppress verbose logs from dependencies
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 logging.getLogger("openai._base_client").setLevel(logging.WARNING)
-logging.getLogger("groq._base_client").setLevel(logging.WARNING)  # Suppress Groq HTTP request/response spam
-logging.getLogger("mcp").setLevel(logging.WARNING)  # MCP client SSE/JSON-RPC spam
-logging.getLogger("livekit").setLevel(logging.WARNING)  # LiveKit internal logs
-logging.getLogger("livekit_api").setLevel(logging.WARNING)  # Rust bridge logs
-logging.getLogger("livekit.agents.voice").setLevel(logging.WARNING)  # Suppress segment sync warnings
-logging.getLogger("livekit.plugins.openai.tts").setLevel(logging.WARNING)  # Suppress "no request_id" spam
-logging.getLogger("caal").setLevel(logging.INFO)  # Our package - INFO level
+logging.getLogger("groq._base_client").setLevel(logging.WARNING)
+logging.getLogger("mcp").setLevel(logging.WARNING)
+logging.getLogger("livekit").setLevel(logging.WARNING)
+logging.getLogger("livekit_api").setLevel(logging.WARNING)
+logging.getLogger("livekit.agents.voice").setLevel(logging.WARNING)
+logging.getLogger("livekit.plugins.openai.tts").setLevel(logging.WARNING)
 
 # =============================================================================
 # Configuration
@@ -548,7 +559,8 @@ def run_webhook_server_sync():
         app,
         host="0.0.0.0",
         port=WEBHOOK_PORT,
-        log_level="info",
+        log_level="warning",
+        log_config=None,  # Don't configure logging (prevents duplicate handlers in forked workers)
     )
     server = uvicorn.Server(config)
     logger.info(f"Starting webhook server on port {WEBHOOK_PORT}")

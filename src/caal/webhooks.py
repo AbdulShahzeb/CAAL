@@ -850,13 +850,13 @@ async def test_hass(req: TestHassRequest) -> TestConnectionResponse:
 
 @app.post("/setup/test-n8n", response_model=TestConnectionResponse)
 async def test_n8n(req: TestN8nRequest) -> TestConnectionResponse:
-    """Test n8n MCP connection and count available workflows.
+    """Test n8n MCP connection.
 
     Args:
         req: TestN8nRequest with URL and token
 
     Returns:
-        TestConnectionResponse with success status and workflow count
+        TestConnectionResponse with success status
     """
     try:
         headers = {
@@ -867,21 +867,29 @@ async def test_n8n(req: TestN8nRequest) -> TestConnectionResponse:
             headers["Authorization"] = f"Bearer {req.token}"
 
         async with httpx.AsyncClient() as client:
-            # MCP protocol: call search_workflows tool via JSON-RPC
+            # MCP protocol: list tools to verify connection
             response = await client.post(
                 req.url,
                 headers=headers,
                 json={
                     "jsonrpc": "2.0",
                     "id": 1,
-                    "method": "tools/call",
-                    "params": {
-                        "name": "search_workflows",
-                        "arguments": {},
-                    },
+                    "method": "tools/list",
+                    "params": {},
                 },
                 timeout=10.0,
             )
+
+            # Check for auth error in response body (n8n returns 200 with error message)
+            if response.status_code == 200:
+                text = response.text
+                if "Unauthorized" in text:
+                    return TestConnectionResponse(
+                        success=False, error="Invalid access token"
+                    )
+                # SSE response with tools means success
+                if "search_workflows" in text:
+                    return TestConnectionResponse(success=True)
 
             if response.status_code == 401:
                 return TestConnectionResponse(
@@ -889,18 +897,7 @@ async def test_n8n(req: TestN8nRequest) -> TestConnectionResponse:
                 )
             response.raise_for_status()
 
-            data = response.json()
-            # MCP response contains result with content array
-            # Content[0].text is JSON with {data: [...], count: N}
-            content = data.get("result", {}).get("content", [])
-            if content and content[0].get("type") == "text":
-                import json
-                workflows_data = json.loads(content[0].get("text", "{}"))
-                workflow_count = workflows_data.get("count", 0)
-            else:
-                workflow_count = 0
-
-            return TestConnectionResponse(success=True, workflow_count=workflow_count)
+            return TestConnectionResponse(success=True)
     except httpx.ConnectError:
         return TestConnectionResponse(
             success=False, error=f"Cannot connect to n8n at {req.url}"

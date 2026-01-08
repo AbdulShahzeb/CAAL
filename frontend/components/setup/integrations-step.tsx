@@ -95,11 +95,10 @@ export function IntegrationsStep({ data, updateData }: IntegrationsStepProps) {
       const result = await response.json();
 
       if (result.success) {
-        const workflowCount = result.workflow_count ?? 0;
         setN8nTest({
           status: 'success',
           error: null,
-          info: `Connected - ${workflowCount} workflows`,
+          info: 'Connected',
         });
       } else {
         setN8nTest({
