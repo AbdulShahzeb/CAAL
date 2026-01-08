@@ -85,12 +85,14 @@ class LLMProvider(ABC):
     async def chat_stream(
         self,
         messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
         **kwargs: Any,
     ) -> AsyncIterator[str]:
         """Execute streaming chat completion.
 
         Args:
             messages: List of message dicts with role/content
+            tools: Optional tool definitions (for validation of tool_calls in history)
             **kwargs: Provider-specific options
 
         Yields:
