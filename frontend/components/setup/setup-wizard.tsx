@@ -109,6 +109,17 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
         });
       }
 
+      // Download Piper model if using Piper
+      if (finalData.tts_provider === 'piper' && finalData.tts_voice_piper) {
+        fetch('/api/download-piper-model', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model_id: finalData.tts_voice_piper }),
+        }).catch(() => {
+          // Non-critical - model can be downloaded later
+        });
+      }
+
       onComplete();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Setup failed');

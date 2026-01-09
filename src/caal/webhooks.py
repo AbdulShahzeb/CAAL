@@ -485,9 +485,15 @@ async def get_voices(provider: str | None = None) -> VoicesResponse:
             response.raise_for_status()
             data = response.json()
 
-            # Kokoro returns {"voices": [{"id": "...", ...}, ...]}
-            voices = [v.get("id") or v.get("voice_id") for v in data.get("voices", [])]
-            voices = [v for v in voices if v]  # Filter None values
+            # Kokoro returns {"voices": ["am_puck", ...]} as plain strings
+            raw_voices = data.get("voices", [])
+            if raw_voices and isinstance(raw_voices[0], str):
+                # Plain string list
+                voices = raw_voices
+            else:
+                # Object list with id field
+                voices = [v.get("id") or v.get("voice_id") for v in raw_voices]
+                voices = [v for v in voices if v]  # Filter None values
 
             return VoicesResponse(voices=voices)
     except Exception as e:
@@ -495,6 +501,83 @@ async def get_voices(provider: str | None = None) -> VoicesResponse:
         # Return default voices as fallback
         return VoicesResponse(
             voices=["af_heart", "af_bella", "af_sarah", "am_adam", "am_puck"]
+        )
+
+
+class DownloadModelRequest(BaseModel):
+    """Request body for /download-piper-model endpoint."""
+
+    model_id: str
+
+
+class DownloadModelResponse(BaseModel):
+    """Response body for /download-piper-model endpoint."""
+
+    success: bool
+    message: str
+
+
+@app.post("/download-piper-model", response_model=DownloadModelResponse)
+async def download_piper_model(request: DownloadModelRequest) -> DownloadModelResponse:
+    """Download a Piper TTS model to Speaches.
+
+    Args:
+        request: Request containing model_id (e.g., "speaches-ai/piper-en_US-ljspeech-medium")
+
+    Returns:
+        DownloadModelResponse with success status and message
+    """
+    speaches_url = os.getenv("SPEACHES_URL", "http://speaches:8000")
+    model_id = request.model_id
+
+    logger.info(f"Piper model download requested: {model_id}")
+
+    # Validate it's a Piper model
+    if not model_id.startswith("speaches-ai/piper-"):
+        logger.warning(f"Invalid Piper model ID: {model_id}")
+        return DownloadModelResponse(
+            success=False,
+            message=f"Invalid Piper model ID: {model_id}"
+        )
+
+    try:
+        async with httpx.AsyncClient() as client:
+            # Check if already downloaded
+            check_response = await client.get(
+                f"{speaches_url}/v1/models/{model_id}",
+                timeout=5.0,
+            )
+            if check_response.status_code == 200:
+                logger.info(f"Piper model already installed: {model_id}")
+                return DownloadModelResponse(
+                    success=True,
+                    message=f"Model '{model_id}' already installed"
+                )
+
+            # Download the model (~60MB, should take <30s)
+            logger.info(f"Downloading Piper model: {model_id}")
+            response = await client.post(
+                f"{speaches_url}/v1/models/{model_id}",
+                timeout=60.0,
+            )
+            response.raise_for_status()
+
+            logger.info(f"Piper model downloaded successfully: {model_id}")
+            return DownloadModelResponse(
+                success=True,
+                message=f"Model '{model_id}' downloaded successfully"
+            )
+    except httpx.TimeoutException:
+        logger.error(f"Timeout downloading Piper model: {model_id}")
+        return DownloadModelResponse(
+            success=False,
+            message=f"Timeout downloading model '{model_id}'"
+        )
+    except Exception as e:
+        logger.error(f"Failed to download Piper model {model_id}: {e}")
+        return DownloadModelResponse(
+            success=False,
+            message=f"Failed to download model: {e}"
         )
 
 

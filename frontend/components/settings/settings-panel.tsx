@@ -121,6 +121,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [groqApiKey, setGroqApiKey] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
   // Test states
@@ -316,6 +317,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
 
   const handleSave = async () => {
     setSaving(true);
+    setSaveStatus('Saving...');
     setError(null);
 
     try {
@@ -362,12 +364,23 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
         });
       }
 
+      // Download Piper model if using Piper
+      if (settings.tts_provider === 'piper' && settings.tts_voice_piper) {
+        setSaveStatus('Downloading voice model...');
+        await fetch('/api/download-piper-model', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model_id: settings.tts_voice_piper }),
+        });
+      }
+
       onClose();
     } catch (err) {
       console.error('Error saving settings:', err);
       setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
       setSaving(false);
+      setSaveStatus('');
     }
   };
 
@@ -402,6 +415,10 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     } catch (err) {
       console.error('Failed to fetch voices for provider:', err);
     }
+  };
+
+  const handlePiperVoiceChange = (voice: string) => {
+    setSettings({ ...settings, tts_voice_piper: voice });
   };
 
   // ---------------------------------------------------------------------------
@@ -470,14 +487,13 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           value={
             settings.tts_provider === 'piper' ? settings.tts_voice_piper : settings.tts_voice_kokoro
           }
-          onChange={(e) =>
-            setSettings({
-              ...settings,
-              ...(settings.tts_provider === 'piper'
-                ? { tts_voice_piper: e.target.value }
-                : { tts_voice_kokoro: e.target.value }),
-            })
-          }
+          onChange={(e) => {
+            if (settings.tts_provider === 'piper') {
+              handlePiperVoiceChange(e.target.value);
+            } else {
+              setSettings({ ...settings, tts_voice_kokoro: e.target.value });
+            }
+          }}
           className="border-input bg-background w-full rounded-lg border px-4 py-3 text-sm"
         >
           {voices.length > 0 ? (
@@ -1064,7 +1080,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               className="w-full py-3"
             >
               <FloppyDisk className="h-4 w-4" weight="bold" />
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? saveStatus || 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </div>

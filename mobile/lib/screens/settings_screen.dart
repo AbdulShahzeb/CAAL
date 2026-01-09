@@ -28,6 +28,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   bool _loading = false;
   bool _saving = false;
+  String _saveStatus = '';
   String? _error;
   bool _serverConnected = false;
 
@@ -243,6 +244,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     setState(() {
       _saving = true;
+      _saveStatus = 'Saving...';
       _error = null;
     });
 
@@ -284,6 +286,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
           });
           return;
         }
+
+        // Download Piper model if using Piper
+        if (_ttsProvider == 'piper' && _ttsVoicePiper.isNotEmpty) {
+          setState(() {
+            _saveStatus = 'Downloading voice model...';
+          });
+          try {
+            await http.post(
+              Uri.parse('$_webhookUrl/download-piper-model'),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({'model_id': _ttsVoicePiper}),
+            );
+          } catch (e) {
+            // Non-critical - model can be downloaded later
+          }
+        }
       }
 
       widget.onSave();
@@ -295,6 +313,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         setState(() {
           _saving = false;
+          _saveStatus = '';
         });
       }
     }
@@ -320,15 +339,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         actions: [
           if (_saving)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation(Color(0xFF45997C)),
-                ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation(Color(0xFF45997C)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _saveStatus.isNotEmpty ? _saveStatus : 'Saving...',
+                    style: const TextStyle(
+                      color: Color(0xFF45997C),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
             )
           else
