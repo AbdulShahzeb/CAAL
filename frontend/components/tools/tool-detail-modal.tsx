@@ -173,13 +173,25 @@ export function ToolDetailModal({ tool, onClose, onInstall, n8nEnabled }: ToolDe
                     <Key className="h-4 w-4 text-green-400" />
                     n8n Credentials Required
                   </h3>
-                  <div className="bg-muted/50 rounded-lg border p-3">
+                  <div className="bg-muted/50 space-y-2 rounded-lg border p-3">
                     {manifest.required_credentials.map((c) => (
-                      <div key={c.name} className="mb-2 last:mb-0">
-                        <p className="text-sm font-medium">{c.description}</p>
-                        <p className="text-muted-foreground text-xs">
-                          Type: {c.type} | Node: {c.node}
-                        </p>
+                      <div key={c.name} className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-medium">{c.description}</p>
+                          <p className="text-muted-foreground text-xs">
+                            {c.credential_type || c.type}
+                            {c.node && ` • ${c.node}`}
+                          </p>
+                        </div>
+                        <span
+                          className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${
+                            c.auth_type === 'predefined'
+                              ? 'bg-green-500/20 text-green-400'
+                              : 'bg-blue-500/20 text-blue-400'
+                          }`}
+                        >
+                          {c.auth_type === 'predefined' ? 'Built-in' : 'Generic'}
+                        </span>
                       </div>
                     ))}
                   </div>

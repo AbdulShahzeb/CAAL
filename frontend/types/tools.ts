@@ -6,14 +6,45 @@ export interface RequiredVariable {
   example: string;
 }
 
+export type CredentialAuthType = 'predefined' | 'generic';
+
 export interface RequiredCredential {
-  node: string;
-  type: string;
+  // Auth type: predefined (n8n built-in like githubApi) or generic (httpHeaderAuth, etc.)
+  auth_type: CredentialAuthType;
+  // The n8n credential type (e.g., 'githubApi', 'httpHeaderAuth', 'slackApi')
+  credential_type: string;
+  // Default credential name in the workflow (user can override during install)
   name: string;
+  // Human-readable description of what this credential is for
   description: string;
+  // Which node uses this credential (for reference)
+  node?: string;
+  // For generic httpHeaderAuth: the header name (e.g., "Authorization")
   header_name?: string;
+  // For generic httpHeaderAuth: prefix before the value (e.g., "Bearer ")
   header_value_prefix?: string;
 }
+
+// Common predefined credential types in n8n
+export const PREDEFINED_CREDENTIAL_TYPES = [
+  'githubApi',
+  'slackApi',
+  'notionApi',
+  'googleApi',
+  'discordApi',
+  'spotifyApi',
+  'twilioApi',
+  'telegramApi',
+  'homeAssistantApi',
+] as const;
+
+// Common generic credential types
+export const GENERIC_CREDENTIAL_TYPES = [
+  'httpHeaderAuth',
+  'httpBasicAuth',
+  'httpDigestAuth',
+  'oAuth2Api',
+] as const;
 
 export interface ToolAuthor {
   github: string;

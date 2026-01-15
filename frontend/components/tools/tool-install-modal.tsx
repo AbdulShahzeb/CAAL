@@ -194,13 +194,27 @@ export function ToolInstallModal({ tool, onClose, onInstallComplete }: ToolInsta
               appears in your n8n instance.
             </p>
             {manifest?.required_credentials.map((c) => (
-              <div key={c.name} className="space-y-1">
-                <p className="text-muted-foreground text-sm">{c.description}</p>
+              <div key={c.name} className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">{c.description}</p>
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-xs font-medium ${
+                      c.auth_type === 'predefined'
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-blue-500/20 text-blue-400'
+                    }`}
+                  >
+                    {c.auth_type === 'predefined' ? 'Built-in' : 'Generic'}
+                  </span>
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  Type: {c.credential_type || c.type}
+                </p>
                 <input
                   type="text"
                   value={credentials[c.name] || ''}
                   onChange={(e) => setCredentials({ ...credentials, [c.name]: e.target.value })}
-                  placeholder="Enter n8n credential name"
+                  placeholder={c.name}
                   className="border-input bg-background w-full rounded-lg border px-4 py-3 text-sm"
                 />
               </div>
