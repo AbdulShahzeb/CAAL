@@ -80,7 +80,10 @@ export function ToolsPanel({ isOpen, onClose }: ToolsPanelProps) {
         {/* Header */}
         <header className="shrink-0 border-b">
           <div className="flex items-center justify-between px-6 py-5">
-            <h1 className="text-2xl font-bold">Tools</h1>
+            <div>
+              <h1 className="text-2xl font-bold">Skills</h1>
+              <p className="text-muted-foreground text-sm">Expand what CAAL can do</p>
+            </div>
             <button
               onClick={onClose}
               className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full p-2 transition-colors"
