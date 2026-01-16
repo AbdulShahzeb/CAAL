@@ -5,6 +5,7 @@ import {
   CATEGORY_COLORS,
   CATEGORY_LABELS,
   TIER_COLORS,
+  TIER_LABELS,
   type ToolCategory,
   type ToolIndexEntry,
 } from '@/types/tools';
@@ -20,6 +21,7 @@ export function ToolCard({ tool, onInstall, onClick }: ToolCardProps) {
     CATEGORY_COLORS[tool.category as ToolCategory] || 'bg-gray-500/20 text-gray-400';
   const tierColor = TIER_COLORS[tool.tier] || 'bg-gray-500/20 text-gray-400';
   const categoryLabel = CATEGORY_LABELS[tool.category as ToolCategory] || tool.category;
+  const tierLabel = TIER_LABELS[tool.tier] || tool.tier;
 
   return (
     <div
@@ -31,8 +33,8 @@ export function ToolCard({ tool, onInstall, onClick }: ToolCardProps) {
         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${categoryColor}`}>
           {categoryLabel}
         </span>
-        <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${tierColor}`}>
-          {tool.tier}
+        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${tierColor}`}>
+          {tierLabel}
         </span>
       </div>
 

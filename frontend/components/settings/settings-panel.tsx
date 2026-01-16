@@ -990,9 +990,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   Test
                 </button>
               </div>
-              <p className="text-muted-foreground text-xs">
-                Found in n8n Settings → MCP Servers
-              </p>
+              <p className="text-muted-foreground text-xs">Found in n8n Settings → MCP Servers</p>
               {n8nTest.error && <p className="text-xs text-red-500">{n8nTest.error}</p>}
               {n8nTest.info && <p className="text-xs text-green-500">{n8nTest.info}</p>}
             </div>

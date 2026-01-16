@@ -84,7 +84,9 @@ export async function POST(request: NextRequest) {
 
     if (!settings.n8n_api_key) {
       return NextResponse.json(
-        { error: 'n8n API Key not configured. Add one in Settings > Integrations to install tools.' },
+        {
+          error: 'n8n API Key not configured. Add one in Settings > Integrations to install tools.',
+        },
         { status: 400 }
       );
     }

@@ -55,7 +55,7 @@ export interface ToolManifest {
   required_credentials: RequiredCredential[];
   required_variables: RequiredVariable[];
   author: ToolAuthor;
-  tier: 'verified' | 'community' | 'experimental';
+  tier: 'community' | 'coreworxlab';
   tags: string[];
   dependencies?: string[];
   created?: string;
@@ -117,7 +117,11 @@ export const CATEGORY_COLORS: Record<ToolCategory, string> = {
 };
 
 export const TIER_COLORS: Record<string, string> = {
-  verified: 'bg-green-500/20 text-green-400',
+  coreworxlab: 'bg-green-500/20 text-green-400',
   community: 'bg-blue-500/20 text-blue-400',
-  experimental: 'bg-orange-500/20 text-orange-400',
+};
+
+export const TIER_LABELS: Record<string, string> = {
+  coreworxlab: 'CoreWorxLab',
+  community: 'Community',
 };

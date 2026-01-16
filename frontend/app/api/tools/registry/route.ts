@@ -34,10 +34,7 @@ export async function GET() {
 
       if (!res.ok) {
         console.error('[/api/tools/registry] Registry fetch failed:', res.status);
-        return NextResponse.json(
-          { error: 'Failed to fetch registry' },
-          { status: res.status }
-        );
+        return NextResponse.json({ error: 'Failed to fetch registry' }, { status: res.status });
       }
 
       data = await res.json();
