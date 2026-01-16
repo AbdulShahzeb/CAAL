@@ -3,7 +3,7 @@ import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
 import path from 'path';
 
-const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/CoreWorxLab/caal-tools/main';
+const REGISTRY_BASE = 'https://registry.caal.io';
 const LOCAL_REGISTRY_PATH =
   process.env.TOOLS_REGISTRY_PATH || '/home/cmac/CoreWorx/2 - Development/caal-tools';
 
@@ -40,8 +40,8 @@ export async function GET(request: NextRequest) {
       manifest = JSON.parse(await readFile(manifestPath, 'utf-8'));
       workflow = JSON.parse(await readFile(workflowPath, 'utf-8'));
     } else {
-      const manifestUrl = `${GITHUB_RAW_BASE}/${toolPath}/manifest.json`;
-      const workflowUrl = `${GITHUB_RAW_BASE}/${toolPath}/workflow.json`;
+      const manifestUrl = `${REGISTRY_BASE}/${toolPath}/manifest.json`;
+      const workflowUrl = `${REGISTRY_BASE}/${toolPath}/workflow.json`;
 
       const [manifestRes, workflowRes] = await Promise.all([
         fetch(manifestUrl, { headers: { Accept: 'application/json' } }),
@@ -50,14 +50,14 @@ export async function GET(request: NextRequest) {
 
       if (!manifestRes.ok) {
         return NextResponse.json(
-          { error: 'Failed to fetch manifest from GitHub' },
+          { error: 'Failed to fetch manifest from registry' },
           { status: manifestRes.status }
         );
       }
 
       if (!workflowRes.ok) {
         return NextResponse.json(
-          { error: 'Failed to fetch workflow from GitHub' },
+          { error: 'Failed to fetch workflow from registry' },
           { status: workflowRes.status }
         );
       }
