@@ -1,0 +1,194 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import { ArrowClockwise, Warning } from '@phosphor-icons/react/dist/ssr';
+import { type SanitizationResult, sanitizeWorkflow } from '@/lib/workflow-sanitizer';
+import type { ToolIndexEntry } from '@/types/tools';
+import { InstalledToolCard } from './installed-tool-card';
+import { WorkflowSubmissionDialog } from './workflow-submission-dialog';
+
+interface N8nWorkflow {
+  id: string;
+  name: string;
+  active: boolean;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+  workflow: object;
+}
+
+interface InstalledToolsViewProps {
+  registryTools: ToolIndexEntry[];
+  n8nEnabled: boolean;
+}
+
+export function InstalledToolsView({ registryTools, n8nEnabled }: InstalledToolsViewProps) {
+  const [workflows, setWorkflows] = useState<N8nWorkflow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submittingWorkflow, setSubmittingWorkflow] = useState<N8nWorkflow | null>(null);
+  const [sanitizationResult, setSanitizationResult] = useState<SanitizationResult | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const fetchWorkflows = useCallback(async () => {
+    if (!n8nEnabled) {
+      setError('n8n is not enabled. Configure n8n in Settings to see installed tools.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/tools/n8n-workflows');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to fetch workflows');
+      }
+
+      const data = await res.json();
+      setWorkflows(data.workflows || []);
+    } catch (err) {
+      console.error('Failed to fetch n8n workflows:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch workflows');
+    } finally {
+      setLoading(false);
+    }
+  }, [n8nEnabled]);
+
+  useEffect(() => {
+    fetchWorkflows();
+  }, [fetchWorkflows]);
+
+  const isInRegistry = useCallback(
+    (workflow: N8nWorkflow): boolean => {
+      const kebabName = workflow.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+
+      return registryTools.some((tool) => tool.name === kebabName);
+    },
+    [registryTools]
+  );
+
+  const handleShare = useCallback(async (workflow: N8nWorkflow) => {
+    setSubmitError(null);
+
+    try {
+      // Sanitize workflow locally
+      const result = sanitizeWorkflow(workflow.workflow);
+
+      // Show confirmation dialog
+      setSubmittingWorkflow(workflow);
+      setSanitizationResult(result);
+    } catch (err) {
+      console.error('Sanitization error:', err);
+      setSubmitError(err instanceof Error ? err.message : 'Sanitization failed');
+    }
+  }, []);
+
+  const handleConfirmSubmission = useCallback(async () => {
+    if (!submittingWorkflow || !sanitizationResult) return;
+
+    try {
+      // POST to VPS
+      const response = await fetch('https://registry.caal.io/api/submit/intake', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workflow: sanitizationResult.sanitized,
+          detected: sanitizationResult.detected,
+          metadata: {
+            installed_name: submittingWorkflow.name,
+            n8n_workflow_id: submittingWorkflow.id,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Submission failed');
+      }
+
+      const { form_url } = await response.json();
+
+      // Open submission form in new tab
+      window.open(form_url, '_blank');
+
+      // Close dialog
+      setSubmittingWorkflow(null);
+      setSanitizationResult(null);
+    } catch (err) {
+      console.error('Submission error:', err);
+      setSubmitError(err instanceof Error ? err.message : 'Submission failed');
+    }
+  }, [submittingWorkflow, sanitizationResult]);
+
+  const handleCancelSubmission = useCallback(() => {
+    setSubmittingWorkflow(null);
+    setSanitizationResult(null);
+    setSubmitError(null);
+  }, []);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <ArrowClockwise className="h-8 w-8 animate-spin text-blue-500" />
+        <p className="text-muted-foreground mt-4">Loading installed tools...</p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Warning className="h-8 w-8 text-red-500" />
+        <p className="text-muted-foreground mt-4">{error}</p>
+        <button
+          onClick={fetchWorkflows}
+          className="bg-muted hover:bg-muted/80 mt-4 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (workflows.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <p className="text-muted-foreground">No workflows installed in n8n</p>
+      </div>
+    );
+  }
+
+  // Workflow grid
+  return (
+    <>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {workflows.map((workflow) => (
+          <InstalledToolCard
+            key={workflow.id}
+            workflow={workflow}
+            isFromRegistry={isInRegistry(workflow)}
+            onShare={handleShare}
+          />
+        ))}
+      </div>
+
+      {/* Submission dialog */}
+      {submittingWorkflow && sanitizationResult && (
+        <WorkflowSubmissionDialog
+          workflow={submittingWorkflow}
+          result={sanitizationResult}
+          error={submitError}
+          onConfirm={handleConfirmSubmission}
+          onCancel={handleCancelSubmission}
+        />
+      )}
+    </>
+  );
+}

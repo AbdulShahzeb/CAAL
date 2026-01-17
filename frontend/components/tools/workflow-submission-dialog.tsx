@@ -1,0 +1,167 @@
+'use client';
+
+import { createPortal } from 'react-dom';
+import { CheckCircle, Warning, X } from '@phosphor-icons/react/dist/ssr';
+import type { SanitizationResult } from '@/lib/workflow-sanitizer';
+
+interface N8nWorkflow {
+  id: string;
+  name: string;
+  active: boolean;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+  workflow: object;
+}
+
+interface WorkflowSubmissionDialogProps {
+  workflow: N8nWorkflow;
+  result: SanitizationResult;
+  error: string | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+export function WorkflowSubmissionDialog({
+  workflow,
+  result,
+  error,
+  onConfirm,
+  onCancel,
+}: WorkflowSubmissionDialogProps) {
+  const { detected, warnings } = result;
+  const hasSecrets =
+    detected.secrets_stripped.api_keys +
+      detected.secrets_stripped.tokens +
+      detected.secrets_stripped.passwords >
+    0;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-center justify-center">
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onCancel} />
+
+      {/* Dialog */}
+      <div className="bg-background relative z-10 w-full max-w-2xl rounded-xl border shadow-2xl">
+        {/* Header */}
+        <div className="flex items-start justify-between border-b p-6">
+          <div>
+            <h2 className="text-xl font-bold">Share Workflow to Registry</h2>
+            <p className="text-muted-foreground mt-1 text-sm">{workflow.name}</p>
+          </div>
+          <button
+            onClick={onCancel}
+            className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full p-2 transition-colors"
+          >
+            <X className="h-5 w-5" weight="bold" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="max-h-[60vh] space-y-4 overflow-y-auto p-6">
+          {/* Security note */}
+          <div className="flex items-start gap-3 rounded-lg border border-green-500/30 bg-green-500/10 p-4">
+            <CheckCircle className="h-5 w-5 shrink-0 text-green-400" weight="fill" />
+            <div>
+              <p className="font-medium text-green-200">Your secrets never leave your network</p>
+              <p className="text-sm text-green-300/80">
+                Sanitization happens locally in your browser before submission.
+              </p>
+            </div>
+          </div>
+
+          {/* Secrets stripped (if any) */}
+          {hasSecrets && (
+            <div className="rounded-lg border border-orange-500/30 bg-orange-500/10 p-4">
+              <p className="mb-2 font-medium text-orange-200">Stripped from workflow:</p>
+              <ul className="space-y-1 text-sm text-orange-300/80">
+                {detected.secrets_stripped.api_keys > 0 && (
+                  <li>• {detected.secrets_stripped.api_keys} API key(s)</li>
+                )}
+                {detected.secrets_stripped.tokens > 0 && (
+                  <li>• {detected.secrets_stripped.tokens} bearer token(s)</li>
+                )}
+                {detected.secrets_stripped.passwords > 0 && (
+                  <li>• {detected.secrets_stripped.passwords} password(s)</li>
+                )}
+              </ul>
+            </div>
+          )}
+
+          {/* Variables detected */}
+          {detected.variables.length > 0 && (
+            <div className="bg-muted/50 rounded-lg border p-4">
+              <p className="mb-2 font-medium">Variables detected (will be parameterized):</p>
+              <ul className="space-y-1 text-sm">
+                {detected.variables.map((v, i) => (
+                  <li key={i} className="text-muted-foreground font-mono">
+                    {v.example} → ${'{'}
+                    {v.name}
+                    {'}'}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Credentials detected */}
+          {detected.credentials.length > 0 && (
+            <div className="bg-muted/50 rounded-lg border p-4">
+              <p className="mb-2 font-medium">Credentials detected:</p>
+              <ul className="space-y-1 text-sm">
+                {detected.credentials.map((c, i) => (
+                  <li key={i} className="text-muted-foreground">
+                    • {c.name} ({c.credential_type})
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Warnings */}
+          {warnings.length > 0 && (
+            <div className="flex items-start gap-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4">
+              <Warning className="h-5 w-5 shrink-0 text-yellow-400" weight="fill" />
+              <div className="space-y-1">
+                {warnings.map((warning, i) => (
+                  <p key={i} className="text-sm text-yellow-300/80">
+                    {warning}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Error */}
+          {error && (
+            <div className="flex items-start gap-3 rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+              <Warning className="h-5 w-5 shrink-0 text-red-400" weight="fill" />
+              <div>
+                <p className="font-medium text-red-200">Submission failed</p>
+                <p className="text-sm text-red-300/80">{error}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 border-t p-6">
+          <button
+            onClick={onCancel}
+            className="hover:bg-muted rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={!!error}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Continue to Submission Form
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}

@@ -2,13 +2,16 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowClockwise, MagnifyingGlass, Warning, X } from '@phosphor-icons/react/dist/ssr';
+import { MagnifyingGlass, Warning, X } from '@phosphor-icons/react/dist/ssr';
 import { useToolRegistry } from '@/hooks/useToolRegistry';
 import type { ToolIndexEntry } from '@/types/tools';
+import { BrowseToolsView } from './browse-tools-view';
 import { CategoryFilter } from './category-filter';
-import { ToolCard } from './tool-card';
+import { InstalledToolsView } from './installed-tools-view';
 import { ToolDetailModal } from './tool-detail-modal';
 import { ToolInstallModal } from './tool-install-modal';
+
+type PanelView = 'browse' | 'installed';
 
 interface ToolsPanelProps {
   isOpen: boolean;
@@ -18,6 +21,7 @@ interface ToolsPanelProps {
 export function ToolsPanel({ isOpen, onClose }: ToolsPanelProps) {
   const {
     filteredTools,
+    tools: registryTools,
     loading,
     error,
     selectedCategory,
@@ -27,6 +31,7 @@ export function ToolsPanel({ isOpen, onClose }: ToolsPanelProps) {
     refresh,
   } = useToolRegistry();
 
+  const [currentView, setCurrentView] = useState<PanelView>('browse');
   const [installingTool, setInstallingTool] = useState<ToolIndexEntry | null>(null);
   const [selectedTool, setSelectedTool] = useState<ToolIndexEntry | null>(null);
   const [n8nEnabled, setN8nEnabled] = useState<boolean | null>(null);
@@ -92,29 +97,55 @@ export function ToolsPanel({ isOpen, onClose }: ToolsPanelProps) {
             </button>
           </div>
 
-          {/* Search and filter */}
-          <div className="space-y-3 px-6 pb-4">
-            {/* Search input */}
-            <div className="relative">
-              <MagnifyingGlass className="text-muted-foreground absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search tools..."
-                className="border-input bg-muted/50 w-full rounded-lg border py-2.5 pr-4 pl-10 text-sm"
-              />
-            </div>
-
-            {/* Category filter */}
-            <CategoryFilter selected={selectedCategory} onSelect={setCategory} />
+          {/* Tab switcher */}
+          <div className="flex gap-2 border-b px-6">
+            <button
+              onClick={() => setCurrentView('browse')}
+              className={`border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
+                currentView === 'browse'
+                  ? 'border-blue-500 text-blue-400'
+                  : 'text-muted-foreground hover:text-foreground border-transparent'
+              }`}
+            >
+              Browse Registry
+            </button>
+            <button
+              onClick={() => setCurrentView('installed')}
+              className={`border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
+                currentView === 'installed'
+                  ? 'border-blue-500 text-blue-400'
+                  : 'text-muted-foreground hover:text-foreground border-transparent'
+              }`}
+            >
+              Installed Tools
+            </button>
           </div>
+
+          {/* Search and filter (only for browse view) */}
+          {currentView === 'browse' && (
+            <div className="space-y-3 px-6 py-4">
+              {/* Search input */}
+              <div className="relative">
+                <MagnifyingGlass className="text-muted-foreground absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search tools..."
+                  className="border-input bg-muted/50 w-full rounded-lg border py-2.5 pr-4 pl-10 text-sm"
+                />
+              </div>
+
+              {/* Category filter */}
+              <CategoryFilter selected={selectedCategory} onSelect={setCategory} />
+            </div>
+          )}
         </header>
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto p-6">
-          {/* n8n not enabled warning */}
-          {!checkingN8n && n8nEnabled === false && (
+          {/* n8n not enabled warning (only for browse view when trying to install) */}
+          {currentView === 'browse' && !checkingN8n && n8nEnabled === false && (
             <div className="mb-6 rounded-xl border border-orange-500/30 bg-orange-500/10 p-4">
               <div className="flex items-start gap-3">
                 <Warning className="h-5 w-5 shrink-0 text-orange-400" weight="bold" />
@@ -128,55 +159,21 @@ export function ToolsPanel({ isOpen, onClose }: ToolsPanelProps) {
             </div>
           )}
 
-          {/* Loading state */}
-          {loading && (
-            <div className="flex flex-col items-center justify-center py-12">
-              <ArrowClockwise className="h-8 w-8 animate-spin text-blue-500" />
-              <p className="text-muted-foreground mt-4">Loading tools...</p>
-            </div>
-          )}
-
-          {/* Error state */}
-          {error && !loading && (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Warning className="h-8 w-8 text-red-500" />
-              <p className="text-muted-foreground mt-4">{error}</p>
-              <button
-                onClick={refresh}
-                className="bg-muted hover:bg-muted/80 mt-4 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
-              >
-                Retry
-              </button>
-            </div>
-          )}
-
-          {/* Empty state */}
-          {!loading && !error && filteredTools.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12">
-              <p className="text-muted-foreground">No tools found</p>
-              {searchQuery && (
-                <button
-                  onClick={() => setSearch('')}
-                  className="text-primary mt-2 text-sm hover:underline"
-                >
-                  Clear search
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Tool grid */}
-          {!loading && !error && filteredTools.length > 0 && (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredTools.map((tool) => (
-                <ToolCard
-                  key={tool.path}
-                  tool={tool}
-                  onInstall={n8nEnabled ? handleInstall : () => {}}
-                  onClick={handleCardClick}
-                />
-              ))}
-            </div>
+          {/* Conditional view rendering */}
+          {currentView === 'browse' ? (
+            <BrowseToolsView
+              filteredTools={filteredTools}
+              loading={loading}
+              error={error}
+              searchQuery={searchQuery}
+              n8nEnabled={n8nEnabled ?? false}
+              onInstall={handleInstall}
+              onCardClick={handleCardClick}
+              onRefresh={refresh}
+              onClearSearch={() => setSearch('')}
+            />
+          ) : (
+            <InstalledToolsView registryTools={registryTools} n8nEnabled={n8nEnabled ?? false} />
           )}
         </main>
       </div>
