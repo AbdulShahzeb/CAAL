@@ -37,8 +37,11 @@ export function ToolsPanel({ isOpen, onClose }: ToolsPanelProps) {
   const [n8nEnabled, setN8nEnabled] = useState<boolean | null>(null);
   const [checkingN8n, setCheckingN8n] = useState(true);
   const [installedSearchQuery, setInstalledSearchQuery] = useState('');
-  // Map of registry_id -> installed version
-  const [installedToolsMap, setInstalledToolsMap] = useState<Map<string, string>>(new Map());
+  // Map of registry_id -> { version, workflowId }
+  const [installedToolsMap, setInstalledToolsMap] = useState<
+    Map<string, { version: string; workflowId: string }>
+  >(new Map());
+  const [n8nBaseUrl, setN8nBaseUrl] = useState<string>('');
 
   const checkN8nStatus = useCallback(async () => {
     setCheckingN8n(true);
@@ -60,13 +63,17 @@ export function ToolsPanel({ isOpen, onClose }: ToolsPanelProps) {
       const res = await fetch('/api/tools/n8n-workflows');
       if (res.ok) {
         const data = await res.json();
-        const map = new Map<string, string>();
+        const map = new Map<string, { version: string; workflowId: string }>();
         for (const wf of data.workflows || []) {
           if (wf.caal_registry_id && wf.caal_registry_version) {
-            map.set(wf.caal_registry_id, wf.caal_registry_version);
+            map.set(wf.caal_registry_id, {
+              version: wf.caal_registry_version,
+              workflowId: wf.id,
+            });
           }
         }
         setInstalledToolsMap(map);
+        setN8nBaseUrl(data.n8n_base_url || '');
       }
     } catch {
       // Ignore errors - just means we can't show installed status
@@ -232,8 +239,11 @@ export function ToolsPanel({ isOpen, onClose }: ToolsPanelProps) {
           installedStatus={
             selectedTool.id && installedToolsMap.has(selectedTool.id)
               ? {
-                  version: installedToolsMap.get(selectedTool.id)!,
-                  upToDate: installedToolsMap.get(selectedTool.id) === selectedTool.version,
+                  version: installedToolsMap.get(selectedTool.id)!.version,
+                  upToDate:
+                    installedToolsMap.get(selectedTool.id)!.version === selectedTool.version,
+                  workflowId: installedToolsMap.get(selectedTool.id)!.workflowId,
+                  n8nBaseUrl: n8nBaseUrl || undefined,
                 }
               : undefined
           }

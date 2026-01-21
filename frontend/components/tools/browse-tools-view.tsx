@@ -10,7 +10,7 @@ interface BrowseToolsViewProps {
   error: string | null;
   searchQuery: string;
   n8nEnabled: boolean;
-  installedToolsMap: Map<string, string>;
+  installedToolsMap: Map<string, { version: string; workflowId: string }>;
   onInstall: (tool: ToolIndexEntry) => void;
   onCardClick: (tool: ToolIndexEntry) => void;
   onRefresh: () => void;

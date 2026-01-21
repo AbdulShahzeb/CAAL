@@ -47,6 +47,7 @@ export function InstalledToolsView({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedTool, setSelectedTool] = useState<ToolIndexEntry | null>(null);
   const [selectedToolStatus, setSelectedToolStatus] = useState<WorkflowStatus | null>(null);
+  const [selectedToolWorkflowId, setSelectedToolWorkflowId] = useState<string | null>(null);
   const [selectedWorkflow, setSelectedWorkflow] = useState<N8nWorkflow | null>(null);
 
   const fetchWorkflows = useCallback(async () => {
@@ -223,6 +224,7 @@ export function InstalledToolsView({
         // Show registry tool detail modal with installed status
         setSelectedTool(matchingTool);
         setSelectedToolStatus(getWorkflowStatus(workflow));
+        setSelectedToolWorkflowId(workflow.id);
       } else {
         // Show custom workflow detail modal
         setSelectedWorkflow(workflow);
@@ -313,6 +315,7 @@ export function InstalledToolsView({
           onClose={() => {
             setSelectedTool(null);
             setSelectedToolStatus(null);
+            setSelectedToolWorkflowId(null);
           }}
           onInstall={() => {}}
           n8nEnabled={n8nEnabled}
@@ -323,6 +326,8 @@ export function InstalledToolsView({
                     ? selectedTool.version
                     : selectedToolStatus.currentVersion,
                   upToDate: selectedToolStatus.upToDate,
+                  workflowId: selectedToolWorkflowId ?? undefined,
+                  n8nBaseUrl: n8nBaseUrl || undefined,
                 }
               : undefined
           }

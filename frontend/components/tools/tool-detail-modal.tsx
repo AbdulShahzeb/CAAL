@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   ArrowRight,
+  ArrowSquareOut,
   CheckCircle,
   CircleNotch,
   GithubLogo,
@@ -27,6 +28,8 @@ import {
 interface InstalledStatus {
   version: string;
   upToDate: boolean;
+  workflowId?: string;
+  n8nBaseUrl?: string;
 }
 
 interface ToolDetailModalProps {
@@ -234,6 +237,25 @@ export function ToolDetailModal({
                     className="text-sm text-blue-400 hover:underline"
                   >
                     @{manifest.author.github}
+                  </a>
+                </div>
+              )}
+
+              {/* n8n Workflow Link (when installed) */}
+              {installedStatus?.workflowId && installedStatus?.n8nBaseUrl && (
+                <div>
+                  <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                    <ArrowSquareOut className="h-4 w-4 text-gray-400" />
+                    Workflow
+                  </h3>
+                  <a
+                    href={`${installedStatus.n8nBaseUrl}/workflow/${installedStatus.workflowId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm text-blue-400 hover:underline"
+                  >
+                    Open in n8n
+                    <ArrowSquareOut className="h-3.5 w-3.5" />
                   </a>
                 </div>
               )}
