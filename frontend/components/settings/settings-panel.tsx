@@ -482,7 +482,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           type="text"
           value={settings.agent_name}
           onChange={(e) => setSettings({ ...settings, agent_name: e.target.value })}
-          className="border-input bg-background w-full rounded-lg border px-4 py-3 text-sm"
+          className="input-recessed w-full rounded-lg px-4 py-3 text-sm"
         />
       </div>
 
@@ -499,7 +499,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               setSettings({ ...settings, tts_voice_kokoro: e.target.value });
             }
           }}
-          className="border-input bg-background w-full rounded-lg border px-4 py-3 text-sm"
+          className="input-recessed w-full rounded-lg px-4 py-3 text-sm"
         >
           {voices.length > 0 ? (
             voices.map((voice) => (
@@ -532,7 +532,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           value={settings.wake_greetings.join('\n')}
           onChange={(e) => handleWakeGreetingsChange(e.target.value)}
           rows={5}
-          className="border-input bg-background w-full rounded-lg border px-4 py-3 text-sm"
+          className="input-recessed w-full rounded-lg px-4 py-3 text-sm"
         />
       </div>
     </div>
@@ -568,7 +568,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
         onChange={(e) => setPromptContent(e.target.value)}
         readOnly={settings.prompt === 'default'}
         rows={12}
-        className={`border-input bg-background w-full rounded-lg border px-4 py-3 font-mono text-sm ${
+        className={`input-recessed w-full rounded-lg px-4 py-3 font-mono text-sm ${
           settings.prompt === 'default' ? 'cursor-not-allowed opacity-60' : ''
         }`}
       />
@@ -615,7 +615,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   value={settings.ollama_host}
                   onChange={(e) => setSettings({ ...settings, ollama_host: e.target.value })}
                   placeholder="http://localhost:11434"
-                  className="border-input bg-background flex-1 rounded-lg border px-4 py-3 text-sm"
+                  className="input-recessed flex-1 rounded-lg px-4 py-3 text-sm"
                 />
                 <button
                   onClick={testOllama}
@@ -639,7 +639,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 <select
                   value={settings.ollama_model}
                   onChange={(e) => setSettings({ ...settings, ollama_model: e.target.value })}
-                  className="border-input bg-background w-full rounded-lg border px-4 py-3 text-sm"
+                  className="input-recessed w-full rounded-lg px-4 py-3 text-sm"
                 >
                   {ollamaModels.length > 0 ? (
                     <>
@@ -672,7 +672,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   value={settings.groq_api_key}
                   onChange={(e) => setSettings({ ...settings, groq_api_key: e.target.value })}
                   placeholder="gsk_..."
-                  className="border-input bg-background flex-1 rounded-lg border px-4 py-3 text-sm"
+                  className="input-recessed flex-1 rounded-lg px-4 py-3 text-sm"
                 />
                 <button
                   onClick={testGroq}
@@ -707,7 +707,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 <select
                   value={settings.groq_model}
                   onChange={(e) => setSettings({ ...settings, groq_model: e.target.value })}
-                  className="border-input bg-background w-full rounded-lg border px-4 py-3 text-sm"
+                  className="input-recessed w-full rounded-lg px-4 py-3 text-sm"
                 >
                   {groqModels.length > 0 ? (
                     <>
@@ -812,7 +812,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           step="1024"
           value={settings.num_ctx}
           onChange={(e) => setSettings({ ...settings, num_ctx: parseInt(e.target.value) || 8192 })}
-          className="border-input bg-background w-full rounded-lg border px-4 py-3 text-sm"
+          className="input-recessed w-full rounded-lg px-4 py-3 text-sm"
         />
       </div>
 
@@ -824,7 +824,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           max="100"
           value={settings.max_turns}
           onChange={(e) => setSettings({ ...settings, max_turns: parseInt(e.target.value) || 20 })}
-          className="border-input bg-background w-full rounded-lg border px-4 py-3 text-sm"
+          className="input-recessed w-full rounded-lg px-4 py-3 text-sm"
         />
       </div>
 
@@ -838,7 +838,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           onChange={(e) =>
             setSettings({ ...settings, tool_cache_size: parseInt(e.target.value) || 3 })
           }
-          className="border-input bg-background w-full rounded-lg border px-4 py-3 text-sm"
+          className="input-recessed w-full rounded-lg px-4 py-3 text-sm"
         />
       </div>
 
@@ -893,8 +893,11 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const renderIntegrationsTab = () => (
     <div className="space-y-4">
       {/* Home Assistant */}
-      <div className="overflow-hidden rounded-xl border">
-        <div className="bg-muted/50 flex items-center justify-between border-b px-4 py-3">
+      <div className="card-elevated overflow-hidden rounded-xl">
+        <div
+          className="flex items-center justify-between border-b px-4 py-3"
+          style={{ borderColor: 'var(--border-subtle)' }}
+        >
           <span className="font-semibold">Home Assistant</span>
           <Toggle
             enabled={settings.hass_enabled}
@@ -911,7 +914,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 value={settings.hass_host}
                 onChange={(e) => setSettings({ ...settings, hass_host: e.target.value })}
                 placeholder="http://homeassistant.local:8123"
-                className="border-input bg-background w-full rounded-lg border px-4 py-3 text-sm"
+                className="input-recessed w-full rounded-lg px-4 py-3 text-sm"
               />
             </div>
             <div className="space-y-2">
@@ -922,7 +925,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   value={settings.hass_token}
                   onChange={(e) => setSettings({ ...settings, hass_token: e.target.value })}
                   placeholder="eyJ0eX..."
-                  className="border-input bg-background flex-1 rounded-lg border px-4 py-3 text-sm"
+                  className="input-recessed flex-1 rounded-lg px-4 py-3 text-sm"
                 />
                 <button
                   onClick={testHass}
@@ -944,9 +947,12 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
 
       {/* n8n */}
       <div
-        className={`overflow-hidden rounded-xl border ${!settings.n8n_enabled ? 'opacity-60' : ''}`}
+        className={`card-elevated overflow-hidden rounded-xl ${!settings.n8n_enabled ? 'opacity-60' : ''}`}
       >
-        <div className="bg-muted/50 flex items-center justify-between border-b px-4 py-3">
+        <div
+          className="flex items-center justify-between border-b px-4 py-3"
+          style={{ borderColor: 'var(--border-subtle)' }}
+        >
           <span className="font-semibold">n8n</span>
           <Toggle
             enabled={settings.n8n_enabled}
@@ -963,7 +969,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 value={settings.n8n_url}
                 onChange={(e) => setSettings({ ...settings, n8n_url: e.target.value })}
                 placeholder="http://n8n:5678"
-                className="border-input bg-background w-full rounded-lg border px-4 py-3 text-sm"
+                className="input-recessed w-full rounded-lg px-4 py-3 text-sm"
               />
               <p className="text-muted-foreground text-xs">
                 /mcp-server/http will be appended automatically
@@ -977,7 +983,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   value={settings.n8n_token}
                   onChange={(e) => setSettings({ ...settings, n8n_token: e.target.value })}
                   placeholder="MCP access token"
-                  className="border-input bg-background flex-1 rounded-lg border px-4 py-3 text-sm"
+                  className="input-recessed flex-1 rounded-lg px-4 py-3 text-sm"
                 />
                 <button
                   onClick={testN8n}
@@ -1001,7 +1007,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 value={settings.n8n_api_key}
                 onChange={(e) => setSettings({ ...settings, n8n_api_key: e.target.value })}
                 placeholder="n8n API key (optional)"
-                className="border-input bg-background w-full rounded-lg border px-4 py-3 text-sm"
+                className="input-recessed w-full rounded-lg px-4 py-3 text-sm"
               />
               <p className="text-muted-foreground text-xs">
                 Required to install tools from the Tool Registry. Create one in n8n Settings → API.
@@ -1015,7 +1021,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
 
   const renderWakeWordTab = () => (
     <div className="space-y-6">
-      <div className="flex items-center justify-between rounded-xl border p-4">
+      <div className="card-elevated flex items-center justify-between rounded-xl p-4">
         <label className="text-sm font-medium">Enable Wake Word</label>
         <Toggle
           enabled={settings.wake_word_enabled}
@@ -1032,7 +1038,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             <select
               value={settings.wake_word_model}
               onChange={(e) => setSettings({ ...settings, wake_word_model: e.target.value })}
-              className="border-input bg-background w-full rounded-lg border px-4 py-3 text-sm"
+              className="input-recessed w-full rounded-lg px-4 py-3 text-sm"
             >
               {wakeWordModels.length > 0 ? (
                 wakeWordModels.map((model) => (
@@ -1063,7 +1069,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                     wake_word_threshold: parseFloat(e.target.value) || 0.5,
                   })
                 }
-                className="border-input bg-background w-full rounded-lg border px-4 py-3 text-sm"
+                className="input-recessed w-full rounded-lg px-4 py-3 text-sm"
               />
             </div>
             <div className="space-y-2">
@@ -1077,7 +1083,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 onChange={(e) =>
                   setSettings({ ...settings, wake_word_timeout: parseFloat(e.target.value) || 3.0 })
                 }
-                className="border-input bg-background w-full rounded-lg border px-4 py-3 text-sm"
+                className="input-recessed w-full rounded-lg px-4 py-3 text-sm"
               />
             </div>
           </div>
@@ -1095,12 +1101,15 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   return createPortal(
     <div className="fixed inset-0 z-50 flex">
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
       {/* Panel */}
-      <div className="bg-background absolute inset-y-0 right-0 flex w-full flex-col shadow-2xl sm:w-[80%] sm:max-w-4xl">
+      <div
+        className="panel-elevated absolute inset-y-0 right-0 flex w-full flex-col sm:w-[85%] sm:max-w-5xl"
+        style={{ borderLeft: '1px solid var(--border-subtle)' }}
+      >
         {/* Header */}
-        <header className="shrink-0 border-b">
+        <header className="section-divider shrink-0">
           <div className="flex items-center justify-between px-6 py-5">
             <h1 className="text-2xl font-bold">Settings</h1>
             <button
@@ -1132,7 +1141,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-6" style={{ background: 'var(--surface-1)' }}>
           <div className="mx-auto max-w-3xl">
             {loading ? (
               <div className="text-muted-foreground py-8 text-center">Loading settings...</div>
@@ -1154,7 +1163,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
         </main>
 
         {/* Footer */}
-        <div className="shrink-0 border-t p-6">
+        <div className="section-divider shrink-0 p-6">
           <div className="mx-auto max-w-3xl">
             <Button
               variant="primary"
