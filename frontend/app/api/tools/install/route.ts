@@ -178,6 +178,22 @@ export async function POST(request: NextRequest) {
         // Don't fail install if cache fails
         console.warn('[/api/tools/install] Failed to cache registry entry:', e);
       }
+
+      // Track install analytics (fire-and-forget)
+      try {
+        await fetch('https://registry.caal.io/api/analytics/install', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            registry_id: registryId,
+            version: registryVersion || '1.0.0',
+          }),
+        });
+        console.log('[/api/tools/install] Install tracked:', registryId, registryVersion);
+      } catch (e) {
+        // Silent fail - don't break install if analytics endpoint is down
+        console.warn('[/api/tools/install] Failed to track install:', e);
+      }
     }
 
     // Reload tools in agent (will work if session is active)
