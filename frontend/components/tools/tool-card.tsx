@@ -27,7 +27,7 @@ export function ToolCard({ tool, isInstalled, onInstall, onClick }: ToolCardProp
   return (
     <div
       onClick={() => onClick(tool)}
-      className="bg-muted/30 hover:border-primary flex cursor-pointer flex-col rounded-xl border p-4 transition-colors"
+      className="card-elevated flex cursor-pointer flex-col rounded-xl p-4"
     >
       {/* Header badges */}
       <div className="mb-3 flex items-center justify-between">
@@ -79,7 +79,10 @@ export function ToolCard({ tool, isInstalled, onInstall, onClick }: ToolCardProp
 
       {/* Install button */}
       {isInstalled ? (
-        <div className="mt-auto flex items-center justify-center gap-2 rounded-lg bg-green-500/10 px-4 py-2 text-sm font-medium text-green-400">
+        <div
+          className="mt-auto flex items-center justify-center gap-2 rounded-lg bg-green-500/10 px-4 py-2 text-sm font-medium text-green-400"
+          style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.2)' }}
+        >
           <CheckCircle className="h-4 w-4" weight="fill" />
           Installed
         </div>
@@ -89,7 +92,7 @@ export function ToolCard({ tool, isInstalled, onInstall, onClick }: ToolCardProp
             e.stopPropagation();
             onInstall(tool);
           }}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 mt-auto rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+          className="btn-glow bg-primary-bg text-primary-foreground mt-auto rounded-lg px-4 py-2 text-sm font-medium"
         >
           Install
         </button>

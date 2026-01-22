@@ -78,12 +78,15 @@ export function ToolDetailModal({
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center">
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="bg-background relative z-10 flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl shadow-2xl">
+      <div
+        className="panel-elevated relative z-10 flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl"
+        style={{ border: '1px solid var(--border-subtle)' }}
+      >
         {/* Header */}
-        <div className="shrink-0 border-b px-6 py-4">
+        <div className="section-divider shrink-0 border-b-0 px-6 py-4">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="mb-2 flex items-center gap-2">
@@ -168,7 +171,7 @@ export function ToolDetailModal({
                     <Key className="h-4 w-4 text-orange-400" />
                     Configuration Required
                   </h3>
-                  <div className="bg-muted/50 rounded-lg border p-3">
+                  <div className="container-inset">
                     {manifest.required_variables.map((v) => (
                       <div key={v.name} className="mb-2 last:mb-0">
                         <code className="text-xs text-orange-300">{v.name}</code>
@@ -189,7 +192,7 @@ export function ToolDetailModal({
                     <Key className="h-4 w-4 text-green-400" />
                     n8n Credentials Required
                   </h3>
-                  <div className="bg-muted/50 space-y-2 rounded-lg border p-3">
+                  <div className="container-inset space-y-2">
                     {manifest.required_credentials.map((c) => (
                       <div key={c.name}>
                         <p className="text-sm font-medium">{c.description}</p>
@@ -264,14 +267,17 @@ export function ToolDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="shrink-0 border-t px-6 py-4">
+        <div className="section-divider shrink-0 overflow-visible px-6 py-4">
           {!n8nEnabled ? (
-            <div className="flex items-center gap-2 text-sm text-orange-400">
+            <div className="container-inset flex items-center gap-2 text-sm text-orange-400">
               <Warning className="h-4 w-4" />
               Enable n8n in Settings to install tools
             </div>
           ) : installedStatus?.upToDate ? (
-            <div className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-500/10 px-4 py-3 text-green-400">
+            <div
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-500/10 px-4 py-3 text-green-400"
+              style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)' }}
+            >
               <CheckCircle className="h-5 w-5" weight="fill" />
               <span className="font-medium">Installed</span>
               <span className="text-sm text-green-400/60">v{installedStatus.version}</span>
@@ -280,7 +286,8 @@ export function ToolDetailModal({
             <button
               onClick={() => onInstall(tool)}
               disabled={loading || !!error}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-3 font-medium text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-3 font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+              style={{ boxShadow: 'var(--shadow-md)' }}
             >
               Update to v{tool.version}
               <ArrowRight className="h-4 w-4" />
@@ -289,7 +296,7 @@ export function ToolDetailModal({
             <button
               onClick={() => onInstall(tool)}
               disabled={loading || !!error}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 font-medium transition-colors disabled:cursor-not-allowed"
+              className="btn-glow bg-primary-bg text-primary-foreground disabled:bg-muted disabled:text-muted-foreground flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 font-medium disabled:cursor-not-allowed disabled:shadow-none"
             >
               Install
               <ArrowRight className="h-4 w-4" />

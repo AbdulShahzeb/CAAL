@@ -50,7 +50,7 @@ export function InstalledToolCard({
   return (
     <div
       onClick={() => onClick(workflow)}
-      className="bg-card hover:border-primary group relative flex cursor-pointer flex-col rounded-xl border p-4 transition-colors"
+      className="card-elevated group relative flex cursor-pointer flex-col rounded-xl p-4"
     >
       {/* Badge */}
       <div className="mb-3 flex items-center justify-between">
@@ -104,7 +104,7 @@ export function InstalledToolCard({
             e.stopPropagation();
             onShare(workflow);
           }}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 mt-auto flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+          className="btn-glow bg-primary-bg text-primary-foreground mt-auto flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium"
         >
           <ShareNetwork className="h-4 w-4" weight="bold" />
           Share to Registry

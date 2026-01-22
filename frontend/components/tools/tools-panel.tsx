@@ -108,12 +108,15 @@ export function ToolsPanel({ isOpen, onClose }: ToolsPanelProps) {
   return createPortal(
     <div className="fixed inset-0 z-50 flex">
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
       {/* Panel */}
-      <div className="bg-background absolute inset-y-0 right-0 flex w-full flex-col shadow-2xl sm:w-[80%] sm:max-w-4xl">
+      <div
+        className="panel-elevated absolute inset-y-0 right-0 flex w-full flex-col sm:w-[85%] sm:max-w-5xl"
+        style={{ borderLeft: '1px solid var(--border-subtle)' }}
+      >
         {/* Header */}
-        <header className="shrink-0 border-b">
+        <header className="section-divider shrink-0">
           <div className="flex items-center justify-between px-6 py-5">
             <div>
               <h1 className="text-2xl font-bold">Skills</h1>
@@ -156,13 +159,13 @@ export function ToolsPanel({ isOpen, onClose }: ToolsPanelProps) {
             <div className="space-y-3 px-6 py-4">
               {/* Search input */}
               <div className="relative">
-                <MagnifyingGlass className="text-muted-foreground absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2" />
+                <MagnifyingGlass className="text-muted-foreground absolute top-1/2 left-3 z-10 h-5 w-5 -translate-y-1/2" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search tools..."
-                  className="border-input bg-muted/50 w-full rounded-lg border py-2.5 pr-4 pl-10 text-sm"
+                  className="input-recessed w-full rounded-lg py-2.5 pr-4 pl-10 text-sm focus:outline-none"
                 />
               </div>
 
@@ -175,13 +178,13 @@ export function ToolsPanel({ isOpen, onClose }: ToolsPanelProps) {
           {currentView === 'installed' && (
             <div className="px-6 py-4">
               <div className="relative">
-                <MagnifyingGlass className="text-muted-foreground absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2" />
+                <MagnifyingGlass className="text-muted-foreground absolute top-1/2 left-3 z-10 h-5 w-5 -translate-y-1/2" />
                 <input
                   type="text"
                   value={installedSearchQuery}
                   onChange={(e) => setInstalledSearchQuery(e.target.value)}
                   placeholder="Search installed tools..."
-                  className="border-input bg-muted/50 w-full rounded-lg border py-2.5 pr-4 pl-10 text-sm"
+                  className="input-recessed w-full rounded-lg py-2.5 pr-4 pl-10 text-sm focus:outline-none"
                 />
               </div>
             </div>
@@ -189,7 +192,7 @@ export function ToolsPanel({ isOpen, onClose }: ToolsPanelProps) {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-6" style={{ background: 'var(--surface-1)' }}>
           {/* n8n not enabled warning (only for browse view when trying to install) */}
           {currentView === 'browse' && !checkingN8n && n8nEnabled === false && (
             <div className="mb-6 rounded-xl border border-orange-500/30 bg-orange-500/10 p-4">

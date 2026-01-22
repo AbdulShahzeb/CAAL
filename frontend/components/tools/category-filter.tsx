@@ -8,14 +8,15 @@ interface CategoryFilterProps {
 }
 
 export function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
+  const selectedClass = 'bg-primary-bg text-primary-foreground shadow-[0_2px_8px_rgba(0,0,0,0.3)]';
+  const unselectedClass = 'bg-muted text-muted-foreground hover:text-foreground';
+
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2">
+    <div className="flex flex-wrap gap-2">
       <button
         onClick={() => onSelect(null)}
-        className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-          selected === null
-            ? 'bg-primary text-primary-foreground'
-            : 'bg-muted text-muted-foreground hover:text-foreground'
+        className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+          selected === null ? selectedClass : unselectedClass
         }`}
       >
         All
@@ -24,10 +25,8 @@ export function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
         <button
           key={category}
           onClick={() => onSelect(category)}
-          className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-            selected === category
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-muted text-muted-foreground hover:text-foreground'
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+            selected === category ? selectedClass : unselectedClass
           }`}
         >
           {CATEGORY_LABELS[category as ToolCategory]}
