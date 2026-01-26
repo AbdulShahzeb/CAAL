@@ -525,7 +525,14 @@ async def entrypoint(ctx: agents.JobContext) -> None:
         wake_word_model = all_settings.get("wake_word_model", "models/hey_jarvis.onnx")
         wake_word_threshold = all_settings.get("wake_word_threshold", 0.5)
         wake_word_timeout = all_settings.get("wake_word_timeout", 3.0)
-        wake_greetings = all_settings.get("wake_greetings", ["Hey, what's up?"])
+        # Use user's custom greetings if set, otherwise use per-language defaults
+        user_settings = settings_module.load_user_settings()
+        if "wake_greetings" in user_settings:
+            wake_greetings = user_settings["wake_greetings"]
+        else:
+            wake_greetings = DEFAULT_WAKE_GREETINGS.get(
+                language, DEFAULT_WAKE_GREETINGS["en"]
+            )
 
         async def on_wake_detected():
             """Play wake greeting directly via TTS, bypassing agent turn-taking."""
@@ -731,8 +738,15 @@ async def entrypoint(ctx: agents.JobContext) -> None:
                     await session.say(message)
 
             elif action == "wake":
-                # Get greeting from settings
-                greetings = get_setting("wake_greetings")
+                # Use user's custom greetings if set, otherwise per-language defaults
+                user_settings_wh = settings_module.load_user_settings()
+                if "wake_greetings" in user_settings_wh:
+                    greetings = user_settings_wh["wake_greetings"]
+                else:
+                    lang = settings_module.get_setting("language", "en")
+                    greetings = DEFAULT_WAKE_GREETINGS.get(
+                        lang, DEFAULT_WAKE_GREETINGS["en"]
+                    )
                 greeting = random.choice(greetings)
                 await session.say(greeting)
 
