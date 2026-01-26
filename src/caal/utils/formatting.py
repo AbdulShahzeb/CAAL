@@ -71,8 +71,21 @@ def number_to_ordinal_word(n: int) -> str:
     return f"{n}th"
 
 
-def format_date_speech_friendly(dt: datetime) -> str:
-    """Format a datetime in a speech-friendly way with ordinal words."""
+def format_date_speech_friendly(dt: datetime, language: str = "en") -> str:
+    """Format a datetime in a speech-friendly way with ordinal words.
+
+    Args:
+        dt: Datetime to format
+        language: ISO 639-1 language code ("en" or "fr")
+
+    Examples:
+        English: "Wednesday, January twenty-first, 2026"
+        French: "mercredi 21 janvier 2026"
+    """
+    if language == "fr":
+        return _format_date_french(dt)
+
+    # English (default)
     day_name = dt.strftime('%A')
     month_name = dt.strftime('%B')
     day_number = dt.day
@@ -83,15 +96,43 @@ def format_date_speech_friendly(dt: datetime) -> str:
     return f"{day_name}, {month_name} {day_ordinal}, {year}"
 
 
-def format_time_speech_friendly(dt: datetime) -> str:
+def _format_date_french(dt: datetime) -> str:
+    """Format a date in French speech-friendly style.
+
+    French dates use cardinal numbers except "premier" for the 1st.
+    Format: "lundi 21 janvier 2026" or "lundi premier janvier 2026"
+    """
+    fr_days = [
+        "lundi", "mardi", "mercredi", "jeudi",
+        "vendredi", "samedi", "dimanche",
+    ]
+    fr_months = [
+        "janvier", "f\u00e9vrier", "mars", "avril", "mai", "juin",
+        "juillet", "ao\u00fbt", "septembre", "octobre", "novembre", "d\u00e9cembre",
+    ]
+
+    day_name = fr_days[dt.weekday()]
+    month_name = fr_months[dt.month - 1]
+    day_number = "premier" if dt.day == 1 else str(dt.day)
+
+    return f"{day_name} {day_number} {month_name} {dt.year}"
+
+
+def format_time_speech_friendly(dt: datetime, language: str = "en") -> str:
     """Format a time in a speech-friendly way for TTS.
 
+    Args:
+        dt: Datetime to format
+        language: ISO 639-1 language code ("en" or "fr")
+
     Examples:
-        3:00 PM -> "3 PM"
-        3:30 PM -> "3:30 PM"
-        12:00 PM -> "noon"
-        12:00 AM -> "midnight"
+        English: 3:00 PM -> "3 PM", 3:30 PM -> "3:30 PM"
+        French: 15:00 -> "15 heures", 15:30 -> "15 heures 30"
     """
+    if language == "fr":
+        return _format_time_french(dt)
+
+    # English (default)
     hour = dt.hour
     minute = dt.minute
 
@@ -116,3 +157,25 @@ def format_time_speech_friendly(dt: datetime) -> str:
     else:
         # With minutes: "3:30 PM"
         return f"{hour_12}:{minute:02d} {period}"
+
+
+def _format_time_french(dt: datetime) -> str:
+    """Format a time in French speech-friendly style.
+
+    Uses 24-hour clock with special cases for midi/minuit.
+    Examples: "15 heures 30", "15 heures", "midi", "minuit"
+    """
+    hour = dt.hour
+    minute = dt.minute
+
+    # Special cases
+    if hour == 0 and minute == 0:
+        return "minuit"
+    if hour == 12 and minute == 0:
+        return "midi"
+
+    # 24-hour format
+    if minute == 0:
+        return f"{hour} heures"
+    else:
+        return f"{hour} heures {minute}"
