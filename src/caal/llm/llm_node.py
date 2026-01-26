@@ -114,7 +114,27 @@ async def llm_node(
 
         # If tools available, check for tool calls first (non-streaming)
         if tools:
-            response = await provider.chat(messages=messages, tools=tools)
+            try:
+                response = await provider.chat(messages=messages, tools=tools)
+            except Exception as tool_err:
+                # Tool call generation failed (e.g., Groq/Llama malformed function syntax)
+                # Retry once, then fall back to streaming without tools
+                err_msg = str(tool_err)
+                if "tool_use_failed" in err_msg or "Failed to call a function" in err_msg:
+                    logger.warning(
+                        f"LLM generated malformed tool call, retrying: {err_msg}"
+                    )
+                    try:
+                        response = await provider.chat(messages=messages, tools=tools)
+                    except Exception:
+                        logger.warning(
+                            "Tool call retry failed, falling back to no-tools response"
+                        )
+                        async for chunk in provider.chat_stream(messages=messages):
+                            yield strip_markdown_for_tts(chunk)
+                        return
+                else:
+                    raise  # Re-raise non-tool errors
 
             if response.tool_calls:
                 logger.info(f"LLM returned {len(response.tool_calls)} tool call(s)")
