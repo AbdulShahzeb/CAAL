@@ -73,12 +73,11 @@ Plans:
   3. Agent personality and responses reflect French language and culture (localized prompts)
   4. Tool responses (weather, home assistant, etc.) are reformulated in configured language
   5. Wake greeting plays in configured language
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: Localized prompts (EN/FR)
-- [ ] 04-02: STT language parameter integration
-- [ ] 04-03: TTS voice mapping per language
+- [ ] 04-01-PLAN.md — Localized prompts (EN/FR) and French date/time formatting
+- [ ] 04-02-PLAN.md — STT language param, TTS voice mapping, wake greetings wiring
 
 ## Progress
 
@@ -91,8 +90,8 @@ Note: Phases 2 and 3 can run in parallel after Phase 1 completes.
 | 1. Foundation | 1/1 | Complete | 2026-01-25 |
 | 2. Frontend i18n | 2/2 | Complete | 2026-01-25 |
 | 3. Mobile i18n | 2/2 | Complete | 2026-01-25 |
-| 4. Voice Pipeline | 0/3 | Not started | - |
+| 4. Voice Pipeline | 0/2 | Not started | - |
 
 ---
 *Roadmap created: 2026-01-25*
-*Last updated: 2026-01-25 - Phase 3 complete*
+*Last updated: 2026-01-26 - Phase 4 planned*
