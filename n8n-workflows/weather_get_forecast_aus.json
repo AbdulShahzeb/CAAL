@@ -1,0 +1,264 @@
+{
+  "name": "weather_get_forecast_aus",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "weather_get_forecast_aus",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "fa2869db-4525-410b-ac3e-790613a1b74d",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1120,
+        80
+      ],
+      "webhookId": "caal-weather-get-forecast-aus-webhook",
+      "notes": "Get daily weather forecast for Australian locations.\nParameters:\n- location (required): Suburb name, postcode, or 'suburb+postcode' (e.g., 'Melbourne', '2124', 'Haymarket 2000'). Defaults to 'Sydney'.\n- days (optional): Number of forecast days to return (1-7). Defaults to 7.\n- targetDay (optional): Specific day of the week to get the forecast for (e.g., 'Thursday'). Defaults to null (return all days up to 'days')."
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Extract and validate input from webhook\nconst body = $input.item.json.body || $input.item.json;\nconst location = (body.location || 'Sydney').toString().trim().replace(/^[a-z]/, (c) => c.toUpperCase());\nconst days = Math.min(Math.max(parseInt(body.days) || (body.days === 0 ? 0 : 7), 1), 7);\nconst targetDay = (body.targetDay || '').trim() || null;\n\n// URL encode the location for BOM API\nconst encodedLocation = encodeURIComponent(location);\nconst searchUrl = `https://api.weather.bom.gov.au/v1/locations?search=${encodedLocation}`;\n\nreturn {\n  location: location,\n  days: days,\n  targetDay: targetDay,\n  searchUrl: searchUrl\n};"
+      },
+      "id": "e6d6b2a8-1534-4c34-9ea6-e75ef8aa8ea5",
+      "name": "Prepare URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -896,
+        80
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "5dd3c06a-fe74-417c-951a-96b25cee157e",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.searchUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "=User-Agent",
+              "value": "Mozilla/5.0"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "cafcca27-615d-4a9e-b8c4-7d197b48aef8",
+      "name": "Location Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -672,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Input from previous node\nconst raw = $input.item.json;\n\n// Extract parameters from webhook or prior node\nconst params = $('Prepare URL').item.json\nconst location = params.location\nconst days = params.days\nconst targetDay = params.targetDay\n\n// Defensive parse of the API response\nconst parsed = raw.data ? raw : raw;\n\n// Validate results\nif (!parsed.data || parsed.data.length === 0) {\n  return {\n    error: true,\n    message: `Sorry, I couldn't find weather data for \"${location}\". Try using a specific suburb name or postcode.`\n  }\n}\n\n// Extract first result as it is likely the closest match\nconst locationData = parsed.data[0];\n\nconst geohash = locationData.geohash;\nconst fullName = `${locationData.name}, ${locationData.state}`;\nconst postcode = locationData.postcode;\n\nreturn {\n  geohash,\n  locationName: fullName,\n  postcode,\n  forecastUrl: `https://api.weather.bom.gov.au/v1/locations/${geohash}/forecasts/daily`,\n  days,\n  targetDay,\n  error: false,\n}\n"
+      },
+      "id": "4e3a944c-f0a9-430a-a3dc-acd2a6bcf840",
+      "name": "Parse Location and Extract Geohash",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        80
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.forecastUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a196b4e8-a718-4443-8c12-e747f29c0409",
+      "name": "GET Forecast"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = $input.item.json.data;\n\n// Read your params\nconst params = $('Parse Location and Extract Geohash').item.json\nconst location = params.locationName\nconst days = params.days\nlet targetDay = params.targetDay\n\n// Pass through previous error\nif (params.error) {\n  return {json: params}\n}\n\nlet periods = data || [];\n\n// Filter by target day\nif (targetDay) {\n  targetDay =\n    targetDay.charAt(0).toUpperCase() + targetDay.slice(1).toLowerCase();\n\n  periods = periods.filter(p => {\n    const dayName = new Date(p.date).toLocaleDateString('en-AU', {\n      weekday: 'long',\n    });\n    return dayName === targetDay;\n  });\n\n  if (periods.length === 0) {\n    return {\n      error: true,\n      message: `Sorry, I couldn't find a forecast for ${targetDay} in ${location}.`,\n    };\n  }\n}\n\n// Slice when not targeting a specific day\nperiods = targetDay ? periods : periods.slice(0, days);\n\n\n// Build forecast message (voice-friendly)\nfunction formatDay(dateStr) {\n  const date = new Date(dateStr);\n  const today = new Date();\n  const tomorrow = new Date(today);\n  tomorrow.setDate(today.getDate() + 1);\n\n  if (date.toDateString() === today.toDateString()) return 'Today';\n  if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';\n  return date.toLocaleDateString('en-AU', { weekday: 'long' });\n}\n\nlet msg = `Forecast for ${location}: `;\nconst forecastParts = [];\n\nfor (const period of periods) {\n  const dayName = formatDay(period.date);\n  const summary = (period.short_text || period.extended_text || 'No details').replace(/\\.$/, '');\n  const uvInfo = (period.uv && period.uv.max_index != null)\n    ? `a max UV index of ${period.uv.max_index}`\n    : 'an unknown max UV';\n  const rainInfo = (period.rain && period.rain.chance != null)\n    ? `a rain chance of ${period.rain.chance} percent`\n    : 'an unknown rain chance';\n  const tempMin = period.temp_min != null ? period.temp_min : 'unknown';\n  const tempMax = period.temp_max != null ? period.temp_max : 'unknown';\n  const tempRange = `${tempMin} to ${tempMax} degrees`;\n\n  forecastParts.push(`${dayName} is ${summary}, temperatures ranging between ${tempRange}, with ${uvInfo}, and ${rainInfo}`);\n\n  // Add more detail if only one day is requested\n  if (periods.length === 1) {\n    if (period.uv && period.uv.max_index != null && period.uv.max_index > 11) {\n      forecastParts.push(`Use sun protection`);\n    }\n    if (period.rain && period.rain.chance != null && period.rain.chance > 50) {\n      forecastParts.push(`Carry an umbrella`);\n    }\n  }\n}\n\nmsg += forecastParts.join('. ') + '.';\nconst forecasts = periods.map(p => ({\n  date: p.date,\n  day: formatDay(p.date),\n  temp_min: p.temp_min,\n  temp_max: p.temp_max,\n  uv_index: p.uv.max_index,\n  summary: p.short_text,\n  details: p.extended_text,\n  rain_chance: p.rain?.chance ?? null,\n  rain_amount: p.rain?.amount ?? null,\n}))\n  \n// Return voice message and data\nreturn {\n  error: false,\n  message: msg,\n  location: location,\n  forecasts: forecasts\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "cf09d06f-0cb3-4483-be47-e21153d20b5a",
+      "name": "Extract Forecast",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "470eac21-fd0a-4ef9-847f-bff015be908f",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -224,
+        80
+      ],
+      "id": "8ddeb9a2-00d9-4729-a7a6-17264ae8e2b4",
+      "name": "If"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare URL": {
+      "main": [
+        [
+          {
+            "node": "Location Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Location Search": {
+      "main": [
+        [
+          {
+            "node": "Parse Location and Extract Geohash",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Location and Extract Geohash": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Forecast": {
+      "main": [
+        [
+          {
+            "node": "Extract Forecast",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Forecast": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GET Forecast",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "availableInMCP": true
+  }
+}
