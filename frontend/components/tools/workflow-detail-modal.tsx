@@ -33,7 +33,7 @@ export function WorkflowDetailModal({
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="bg-background relative z-10 flex h-[80vh] w-full max-w-3xl flex-col rounded-xl border shadow-2xl">
+      <div className="bg-surface-1 relative z-10 flex h-[80vh] w-full max-w-3xl flex-col rounded-xl border shadow-2xl">
         {/* Header */}
         <div className="flex shrink-0 items-start justify-between border-b p-6">
           <div>
