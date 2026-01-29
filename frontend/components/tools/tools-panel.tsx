@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MagnifyingGlass, Warning, X } from '@phosphor-icons/react/dist/ssr';
-import { useToolRegistry } from '@/hooks/useToolRegistry';
+import { type SortOption, useToolRegistry } from '@/hooks/useToolRegistry';
 import type { ToolIndexEntry } from '@/types/tools';
 import { BrowseToolsView } from './browse-tools-view';
 import { CategoryFilter } from './category-filter';
@@ -186,8 +186,8 @@ export function ToolsPanel({ isOpen, onClose }: ToolsPanelProps) {
                 {/* Sort selector */}
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="select-field text-foreground w-48 shrink-0 py-3 px-3 text-sm"
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  className="select-field text-foreground w-48 shrink-0 px-3 py-3 text-sm"
                 >
                   <option value="alphabetical">A → Z</option>
                   <option value="alphabetical-desc">Z → A</option>
