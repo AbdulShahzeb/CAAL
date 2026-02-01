@@ -518,6 +518,22 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ settings: updatedSettings }),
       });
+
+      // Pre-download the Piper TTS model for non-English languages (fire-and-forget)
+      if (newTtsProvider === 'piper') {
+        const piperModels: Record<string, string> = {
+          fr: 'speaches-ai/piper-fr_FR-siwis-medium',
+        };
+        const modelId = piperModels[newLocale];
+        if (modelId) {
+          fetch('/api/download-piper-model', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model_id: modelId }),
+          }).catch(() => {}); // Best-effort, agent retries if not ready
+        }
+      }
+
       document.cookie = `CAAL_LOCALE=${newLocale};path=/;max-age=31536000;SameSite=Lax`;
       toast.success(t('language.updated'));
       setTimeout(() => window.location.reload(), 500);
