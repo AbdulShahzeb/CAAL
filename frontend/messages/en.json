@@ -228,5 +228,25 @@
     "step2Title": "Choose your voice",
     "step3Title": "Configure integrations",
     "finishSetup": "Finish Setup"
+  },
+  "ControlBar": {
+    "ariaLabel": "Voice assistant controls",
+    "toggleMicrophone": "Toggle microphone",
+    "toggleCamera": "Toggle camera",
+    "screenShare": "Screen share",
+    "toggleScreenShare": "Toggle screen share",
+    "transcript": "Transcript",
+    "toggleTranscript": "Toggle transcript",
+    "endSession": "End session",
+    "endCall": "END CALL",
+    "endCallShort": "END",
+    "wakeWordDisabled": "Wake word detection disabled",
+    "wakeWordWaiting": "Waiting for wake word — say \"{wakeWord}\"",
+    "wakeWordListening": "Listening — speak now",
+    "selectMicrophone": "Select microphone",
+    "selectCamera": "Select camera",
+    "typePlaceholder": "Type something...",
+    "sending": "Sending...",
+    "send": "Send"
   }
 }

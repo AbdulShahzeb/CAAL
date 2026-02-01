@@ -228,5 +228,25 @@
     "step2Title": "Scegli la tua voce",
     "step3Title": "Configura le integrazioni",
     "finishSetup": "Completa la configurazione"
+  },
+  "ControlBar": {
+    "ariaLabel": "Controlli dell'assistente vocale",
+    "toggleMicrophone": "Attiva/disattiva il microfono",
+    "toggleCamera": "Attiva/disattiva la fotocamera",
+    "screenShare": "Condivisione schermo",
+    "toggleScreenShare": "Attiva/disattiva la condivisione schermo",
+    "transcript": "Trascrizione",
+    "toggleTranscript": "Mostra/nascondi la trascrizione",
+    "endSession": "Termina sessione",
+    "endCall": "CHIUDI",
+    "endCallShort": "FINE",
+    "wakeWordDisabled": "Rilevamento della parola di attivazione disabilitato",
+    "wakeWordWaiting": "In attesa della parola di attivazione — di' \"{wakeWord}\"",
+    "wakeWordListening": "In ascolto — parla ora",
+    "selectMicrophone": "Seleziona microfono",
+    "selectCamera": "Seleziona fotocamera",
+    "typePlaceholder": "Scrivi qualcosa...",
+    "sending": "Invio...",
+    "send": "Invia"
   }
 }
