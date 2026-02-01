@@ -8,6 +8,7 @@
     "continue": "Continuer",
     "cancel": "Annuler",
     "close": "Fermer",
+    "retry": "Réessayer",
     "enabled": "Actif",
     "disabled": "Inactif",
     "settings": "Paramètres",
@@ -32,6 +33,12 @@
       "label": "Langue",
       "description": "Choisissez votre langue préférée",
       "updated": "Langue mise à jour"
+    },
+    "theme": {
+      "changeTheme": "Changer le thème",
+      "midnight": "Nuit",
+      "greySlate": "Ardoise grise",
+      "light": "Clair"
     },
     "agent": {
       "name": "Nom de l'agent",
@@ -84,18 +91,25 @@
     },
     "integrations": {
       "homeAssistant": "Home Assistant",
-      "homeAssistantDesc": "Contrôlez votre maison connectée",
+      "homeAssistantDesc": "Contrôlez vos appareils de maison connectée",
       "n8n": "n8n",
       "n8nWorkflows": "Workflows n8n",
-      "n8nDesc": "Connecter des automatisations personnalisées",
+      "n8nDesc": "Automatisation de workflows et intégrations d'outils",
       "longLivedToken": "Jeton d'accès longue durée",
       "accessToken": "Jeton d'accès",
       "connected": "Connecté",
       "entities": "{count} entités",
       "mcpNote": "/mcp-server/http sera ajouté automatiquement",
+      "mcpToken": "Jeton MCP",
+      "mcpTokenPlaceholder": "Jeton d'accès MCP",
+      "mcpTokenHint": "Disponible dans Paramètres n8n → Serveurs MCP",
+      "n8nApiKeyPlaceholder": "Clé API n8n (optionnel)",
+      "n8nApiKeyHint": "Nécessaire pour installer des outils depuis le registre d'outils. Créez-en une dans Paramètres n8n → API.",
       "optionalNote": "Configurez des intégrations optionnelles. Vous pouvez les ajouter ou les modifier plus tard dans les Paramètres."
     },
     "wake": {
+      "title": "Mot d'activation",
+      "description": "Activer l'agent avec une phrase déclencheur",
       "enable": "Activer le mot d'activation",
       "model": "Modèle de mot d'activation",
       "threshold": "Seuil",
@@ -104,10 +118,13 @@
     "errors": {
       "loadFailed": "Échec du chargement des paramètres",
       "saveFailed": "Échec de l'enregistrement",
+      "savePromptFailed": "Échec de l'enregistrement du prompt",
       "connectionFailed": "Échec de la connexion",
+      "failedToValidate": "Échec de la validation",
       "invalidApiKey": "Clé API invalide"
     },
     "status": {
+      "loading": "Chargement des paramètres...",
       "downloadingVoice": "Téléchargement du modèle vocal..."
     },
     "tts": {
@@ -116,6 +133,92 @@
       "piperDesc": "Léger, compatible CPU avec plus de 35 langues",
       "kokoroNote": "Kokoro nécessite un GPU pour des performances optimales.",
       "piperNote": "Piper fonctionne sur CPU et supporte de nombreuses langues."
+    }
+  },
+  "Tools": {
+    "panel": {
+      "title": "Outils",
+      "subtitle": "Étendez les capacités de CAAL",
+      "browseTab": "Parcourir le registre",
+      "installedTab": "Outils installés",
+      "searchPlaceholder": "Rechercher des outils...",
+      "installedSearchPlaceholder": "Rechercher les outils installés..."
+    },
+    "sort": {
+      "alphabetical": "A → Z",
+      "alphabeticalDesc": "Z → A",
+      "newest": "Plus récents",
+      "oldest": "Plus anciens"
+    },
+    "warnings": {
+      "n8nNotConfigured": "n8n non configuré",
+      "n8nEnablePrompt": "Activez n8n dans Paramètres → Intégrations pour installer des outils."
+    },
+    "browse": {
+      "loading": "Chargement des outils...",
+      "emptyState": "Aucun outil trouvé",
+      "clearSearch": "Effacer la recherche"
+    },
+    "card": {
+      "voiceTriggerLabel": "Essayez de dire",
+      "installedBadge": "Installé",
+      "installButton": "Installer l'outil",
+      "customBadge": "Personnalisé",
+      "activeLabel": "Actif",
+      "inactiveLabel": "Inactif",
+      "shareButton": "Partager au registre",
+      "shareButtonShort": "Partager",
+      "updateButton": "Mettre à jour"
+    },
+    "detail": {
+      "loading": "Chargement des détails...",
+      "toolSuiteTitle": "Suite d'outils",
+      "toolSuiteDescription": "Cet outil multi-actions peut effectuer plusieurs tâches connexes.",
+      "voiceTriggersTitle": "Essayez de dire",
+      "voiceTriggerFormat": "Hey Cal, {trigger}",
+      "requiredServicesTitle": "Services requis",
+      "requiredVariablesTitle": "Configuration requise",
+      "exampleLabel": "Exemple :",
+      "requiredCredentialsTitle": "Identifiants n8n requis",
+      "tagsTitle": "Étiquettes",
+      "authorTitle": "Auteur",
+      "workflowTitle": "Workflow",
+      "openWorkflowButton": "Ouvrir dans n8n",
+      "n8nDisabledMessage": "Activez n8n dans les Paramètres pour installer des outils",
+      "updateButton": "Mettre à jour vers v{version}",
+      "installButton": "Installer l'outil"
+    },
+    "install": {
+      "loading": "Chargement des détails de l'outil...",
+      "variablesIntro": "Entrez les valeurs de configuration pour cet outil :",
+      "credentialsIntro": "Cet outil nécessite des identifiants n8n. Entrez le nom exact de chaque identifiant tel qu'il apparaît dans votre instance n8n.",
+      "credentialTypeLabel": "Type :",
+      "credentialPlaceholder": "Entrez le nom de l'identifiant n8n",
+      "submitButton": "Installer",
+      "installing": "Installation de l'outil dans n8n...",
+      "successTitle": "Outil installé !",
+      "successMessage": "{tool} est maintenant disponible.",
+      "successVoiceTriggersLabel": "Essayez de dire :",
+      "errorTitle": "Échec de l'installation",
+      "modalTitle": "Installer {tool}"
+    },
+    "installed": {
+      "n8nDisabled": "n8n n'est pas activé. Configurez n8n dans les Paramètres pour voir les outils installés.",
+      "loading": "Chargement des outils installés...",
+      "emptyState": "Aucun workflow installé dans n8n",
+      "noSearchResults": "Aucun outil ne correspond à « {query} »"
+    },
+    "reload": {
+      "tooltip": "Recharger les outils"
+    },
+    "status": {
+      "initialTooltip": "État de l'outil",
+      "toolUsedTooltip": "Outil : {names}",
+      "noToolTooltip": "Aucun outil utilisé",
+      "waitingAriaLabel": "État de l'outil : en attente de réponse",
+      "toolDetailsAriaLabel": "Outil utilisé : {names}. Cliquez pour les détails.",
+      "noToolAriaLabel": "Aucun outil appelé — réponse générée par le modèle",
+      "parametersTitle": "Paramètres de l'outil"
     }
   },
   "Setup": {

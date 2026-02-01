@@ -8,6 +8,7 @@
     "continue": "Continue",
     "cancel": "Cancel",
     "close": "Close",
+    "retry": "Retry",
     "enabled": "Enabled",
     "disabled": "Disabled",
     "settings": "Settings",
@@ -32,6 +33,12 @@
       "label": "Language",
       "description": "Choose your preferred language",
       "updated": "Language updated"
+    },
+    "theme": {
+      "changeTheme": "Change theme",
+      "midnight": "Midnight",
+      "greySlate": "Grey Slate",
+      "light": "Light"
     },
     "agent": {
       "name": "Agent Name",
@@ -84,18 +91,25 @@
     },
     "integrations": {
       "homeAssistant": "Home Assistant",
-      "homeAssistantDesc": "Control your smart home",
+      "homeAssistantDesc": "Control your smart home devices",
       "n8n": "n8n",
       "n8nWorkflows": "n8n Workflows",
-      "n8nDesc": "Connect custom automations",
+      "n8nDesc": "Workflow automation and tool integrations",
       "longLivedToken": "Long-lived Access Token",
       "accessToken": "Access Token",
       "connected": "Connected",
       "entities": "{count} entities",
       "mcpNote": "/mcp-server/http will be appended automatically",
+      "mcpToken": "MCP Token",
+      "mcpTokenPlaceholder": "MCP access token",
+      "mcpTokenHint": "Found in n8n Settings → MCP Servers",
+      "n8nApiKeyPlaceholder": "n8n API key (optional)",
+      "n8nApiKeyHint": "Required to install tools from the Tool Registry. Create one in n8n Settings → API.",
       "optionalNote": "Configure optional integrations. You can add or change these later in Settings."
     },
     "wake": {
+      "title": "Wake Word",
+      "description": "Activate the agent with a spoken trigger phrase",
       "enable": "Enable Wake Word",
       "model": "Wake Word Model",
       "threshold": "Threshold",
@@ -104,10 +118,13 @@
     "errors": {
       "loadFailed": "Failed to load settings",
       "saveFailed": "Failed to save",
+      "savePromptFailed": "Failed to save prompt",
       "connectionFailed": "Connection failed",
+      "failedToValidate": "Failed to validate",
       "invalidApiKey": "Invalid API key"
     },
     "status": {
+      "loading": "Loading settings...",
       "downloadingVoice": "Downloading voice model..."
     },
     "tts": {
@@ -116,6 +133,92 @@
       "piperDesc": "CPU-friendly, lightweight with 35+ languages",
       "kokoroNote": "Kokoro requires a GPU for optimal performance.",
       "piperNote": "Piper runs on CPU and supports many languages."
+    }
+  },
+  "Tools": {
+    "panel": {
+      "title": "Tools",
+      "subtitle": "Expand what CAAL can do",
+      "browseTab": "Browse Registry",
+      "installedTab": "Installed Tools",
+      "searchPlaceholder": "Search tools...",
+      "installedSearchPlaceholder": "Search installed tools..."
+    },
+    "sort": {
+      "alphabetical": "A → Z",
+      "alphabeticalDesc": "Z → A",
+      "newest": "Newest First",
+      "oldest": "Oldest First"
+    },
+    "warnings": {
+      "n8nNotConfigured": "n8n not configured",
+      "n8nEnablePrompt": "Enable n8n in Settings → Integrations to install tools."
+    },
+    "browse": {
+      "loading": "Loading tools...",
+      "emptyState": "No tools found",
+      "clearSearch": "Clear search"
+    },
+    "card": {
+      "voiceTriggerLabel": "Try saying",
+      "installedBadge": "Installed",
+      "installButton": "Install Tool",
+      "customBadge": "Custom",
+      "activeLabel": "Active",
+      "inactiveLabel": "Inactive",
+      "shareButton": "Share to Registry",
+      "shareButtonShort": "Share",
+      "updateButton": "Update"
+    },
+    "detail": {
+      "loading": "Loading details...",
+      "toolSuiteTitle": "Tool Suite",
+      "toolSuiteDescription": "This is a multi-action tool that can perform several related tasks.",
+      "voiceTriggersTitle": "Try Saying",
+      "voiceTriggerFormat": "Hey Cal, {trigger}",
+      "requiredServicesTitle": "Required Services",
+      "requiredVariablesTitle": "Configuration Required",
+      "exampleLabel": "Example:",
+      "requiredCredentialsTitle": "n8n Credentials Required",
+      "tagsTitle": "Tags",
+      "authorTitle": "Author",
+      "workflowTitle": "Workflow",
+      "openWorkflowButton": "Open in n8n",
+      "n8nDisabledMessage": "Enable n8n in Settings to install tools",
+      "updateButton": "Update to v{version}",
+      "installButton": "Install Tool"
+    },
+    "install": {
+      "loading": "Loading tool details...",
+      "variablesIntro": "Enter the configuration values for this tool:",
+      "credentialsIntro": "This tool requires n8n credentials. Enter the exact name of each credential as it appears in your n8n instance.",
+      "credentialTypeLabel": "Type:",
+      "credentialPlaceholder": "Enter n8n credential name",
+      "submitButton": "Install",
+      "installing": "Installing tool to n8n...",
+      "successTitle": "Tool Installed!",
+      "successMessage": "{tool} is now available.",
+      "successVoiceTriggersLabel": "Try saying:",
+      "errorTitle": "Installation Failed",
+      "modalTitle": "Install {tool}"
+    },
+    "installed": {
+      "n8nDisabled": "n8n is not enabled. Configure n8n in Settings to see installed tools.",
+      "loading": "Loading installed tools...",
+      "emptyState": "No workflows installed in n8n",
+      "noSearchResults": "No tools match \"{query}\""
+    },
+    "reload": {
+      "tooltip": "Reload tools"
+    },
+    "status": {
+      "initialTooltip": "Tool status",
+      "toolUsedTooltip": "Tool: {names}",
+      "noToolTooltip": "No tool used",
+      "waitingAriaLabel": "Tool status: waiting for response",
+      "toolDetailsAriaLabel": "Tool used: {names}. Click for details.",
+      "noToolAriaLabel": "No tool called - response generated from model",
+      "parametersTitle": "Tool Parameters"
     }
   },
   "Setup": {
