@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Gear, Wrench } from '@phosphor-icons/react/dist/ssr';
+import { Brain, Gear, Wrench } from '@phosphor-icons/react/dist/ssr';
 import { Button } from '@/components/livekit/button';
 
 function WelcomeImage() {
@@ -26,12 +26,14 @@ interface WelcomeViewProps {
   onStartCall: () => void;
   onOpenSettings?: () => void;
   onOpenTools?: () => void;
+  onOpenMemory?: () => void;
 }
 
 export const WelcomeView = ({
   onStartCall,
   onOpenSettings,
   onOpenTools,
+  onOpenMemory,
   ref,
 }: React.ComponentProps<'div'> & WelcomeViewProps) => {
   const t = useTranslations('Welcome');
@@ -41,6 +43,15 @@ export const WelcomeView = ({
     <div ref={ref} className="relative min-h-screen" style={{ background: 'var(--surface-deep)' }}>
       {/* Top right buttons */}
       <div className="fixed top-6 right-6 z-40 flex items-center gap-2">
+        {onOpenMemory && (
+          <button
+            onClick={onOpenMemory}
+            className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full p-2 transition-colors"
+            title={tCommon('memory')}
+          >
+            <Brain className="h-6 w-6" weight="fill" />
+          </button>
+        )}
         {onOpenTools && (
           <button
             onClick={onOpenTools}

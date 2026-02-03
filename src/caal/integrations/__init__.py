@@ -3,6 +3,7 @@ MCP integrations for voice assistant.
 """
 
 from .mcp_loader import MCPServerConfig, initialize_mcp_servers, load_mcp_config
+from .memory_tool import MemoryTools
 from .n8n import discover_n8n_workflows, execute_n8n_workflow
 from .web_search import WebSearchTools
 
@@ -12,5 +13,6 @@ __all__ = [
     "MCPServerConfig",
     "discover_n8n_workflows",
     "execute_n8n_workflow",
+    "MemoryTools",
     "WebSearchTools",
 ]

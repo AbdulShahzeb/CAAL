@@ -8,11 +8,13 @@
     "continue": "Continua",
     "cancel": "Annulla",
     "close": "Chiudi",
+    "delete": "Elimina",
     "retry": "Riprova",
     "enabled": "Attivo",
     "disabled": "Disattivo",
     "settings": "Impostazioni",
     "tools": "Strumenti",
+    "memory": "Memoria",
     "connected": "Connesso"
   },
   "Welcome": {
@@ -266,6 +268,28 @@
       "n8nWorkflowLabel": "Workflow n8n",
       "unpublishedInfo": "Questo strumento personalizzato non è pubblicato nel registro strumenti CAAL. Condividilo per aiutare gli altri a scoprire e usare questo strumento. Tutte le chiavi, gli ID e gli URL privati verranno rimossi automaticamente.",
       "shareButton": "Condividi nel registro"
+    }
+  },
+  "Memory": {
+    "panel": {
+      "title": "Memoria",
+      "subtitle": "{count} voci memorizzate",
+      "emptyState": "Nessuna memoria memorizzata",
+      "emptyHint": "Le memorie vengono create quando gli strumenti restituiscono dati o quando mi chiedi di ricordare qualcosa",
+      "clearAll": "Cancella tutto"
+    },
+    "confirmClearAll": "Cancellare tutte le voci di memoria?",
+    "detail": {
+      "value": "Valore",
+      "storedAt": "Memorizzato",
+      "expiresAt": "Scade",
+      "noExpiry": "Nessuna scadenza",
+      "source": "Fonte",
+      "sources": {
+        "tool_hint": "Memorizzato automaticamente dallo strumento",
+        "explicit": "Memorizzato su richiesta",
+        "api": "Memorizzato tramite API"
+      }
     }
   },
   "Setup": {

@@ -8,11 +8,13 @@
     "continue": "Continue",
     "cancel": "Cancel",
     "close": "Close",
+    "delete": "Delete",
     "retry": "Retry",
     "enabled": "Enabled",
     "disabled": "Disabled",
     "settings": "Settings",
     "tools": "Tools",
+    "memory": "Memory",
     "connected": "Connected"
   },
   "Welcome": {
@@ -266,6 +268,28 @@
       "toolDetailsAriaLabel": "Tool used: {names}. Click for details.",
       "noToolAriaLabel": "No tool called - response generated from model",
       "parametersTitle": "Tool Parameters"
+    }
+  },
+  "Memory": {
+    "panel": {
+      "title": "Memory",
+      "subtitle": "{count} entries stored",
+      "emptyState": "No memories stored",
+      "emptyHint": "Memories are created when tools return data or when you ask me to remember something",
+      "clearAll": "Clear All"
+    },
+    "confirmClearAll": "Clear all memory entries?",
+    "detail": {
+      "value": "Value",
+      "storedAt": "Stored",
+      "expiresAt": "Expires",
+      "noExpiry": "No expiry",
+      "source": "Source",
+      "sources": {
+        "tool_hint": "Auto-stored from tool",
+        "explicit": "Stored by request",
+        "api": "Stored via API"
+      }
     }
   },
   "Setup": {

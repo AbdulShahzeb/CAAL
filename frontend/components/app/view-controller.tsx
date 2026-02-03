@@ -6,6 +6,7 @@ import { useSessionContext } from '@livekit/components-react';
 import type { AppConfig } from '@/app-config';
 import { SessionView } from '@/components/app/session-view';
 import { WelcomeView } from '@/components/app/welcome-view';
+import { MemoryPanel } from '@/components/memory';
 import { SettingsPanel } from '@/components/settings/settings-panel';
 import { ToolsPanel } from '@/components/tools';
 
@@ -38,6 +39,7 @@ export function ViewController({ appConfig }: ViewControllerProps) {
   const { isConnected, start } = useSessionContext();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [memoryOpen, setMemoryOpen] = useState(false);
 
   return (
     <>
@@ -50,6 +52,7 @@ export function ViewController({ appConfig }: ViewControllerProps) {
             onStartCall={start}
             onOpenSettings={() => setSettingsOpen(true)}
             onOpenTools={() => setToolsOpen(true)}
+            onOpenMemory={() => setMemoryOpen(true)}
           />
         )}
         {/* Session view */}
@@ -63,6 +66,9 @@ export function ViewController({ appConfig }: ViewControllerProps) {
 
       {/* Tools panel */}
       <ToolsPanel isOpen={toolsOpen} onClose={() => setToolsOpen(false)} />
+
+      {/* Memory panel */}
+      <MemoryPanel isOpen={memoryOpen} onClose={() => setMemoryOpen(false)} />
     </>
   );
 }

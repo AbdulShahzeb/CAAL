@@ -49,12 +49,14 @@ from livekit.plugins import openai, silero  # noqa: E402
 
 from caal import CAALLLM  # noqa: E402
 from caal.integrations import (  # noqa: E402
+    MemoryTools,
     WebSearchTools,
     discover_n8n_workflows,
     initialize_mcp_servers,
     load_mcp_config,
 )
 from caal.llm import ToolDataCache, llm_node  # noqa: E402
+from caal.memory import ShortTermMemory  # noqa: E402
 from caal.stt import WakeWordGatedSTT  # noqa: E402
 from caal.tts.sync_openai_tts import SyncOpenAITTS  # noqa: E402
 
@@ -359,8 +361,8 @@ def create_hass_tools(hass_server: mcp.MCPServerHTTP) -> tuple[list[dict], dict]
     return tool_definitions, tool_callables
 
 
-class VoiceAssistant(WebSearchTools, Agent):
-    """Voice assistant with MCP tools and web search."""
+class VoiceAssistant(MemoryTools, WebSearchTools, Agent):
+    """Voice assistant with MCP tools, web search, and short-term memory."""
 
     def __init__(
         self,
@@ -375,6 +377,7 @@ class VoiceAssistant(WebSearchTools, Agent):
         max_turns: int = 20,
         hass_tool_definitions: list[dict] | None = None,
         hass_tool_callables: dict | None = None,
+        short_term_memory: ShortTermMemory | None = None,
     ) -> None:
         super().__init__(
             instructions=load_prompt(language=language),
@@ -404,6 +407,9 @@ class VoiceAssistant(WebSearchTools, Agent):
         self._tool_data_cache = ToolDataCache(max_entries=tool_cache_size)
         self._max_turns = max_turns
 
+        # Short-term memory for persistent context (MemoryTools mixin requirement)
+        self._short_term_memory = short_term_memory
+
     async def llm_node(self, chat_ctx, tools, model_settings):
         """Custom LLM node using provider-agnostic interface."""
         async for chunk in llm_node(
@@ -411,6 +417,7 @@ class VoiceAssistant(WebSearchTools, Agent):
             chat_ctx,
             provider=self._provider,
             tool_data_cache=self._tool_data_cache,
+            short_term_memory=self._short_term_memory,
             max_turns=self._max_turns,
         ):
             yield chunk
@@ -741,6 +748,14 @@ async def entrypoint(ctx: agents.JobContext) -> None:
         hass_tool_definitions, hass_tool_callables = create_hass_tools(hass_server)
         logger.info("Home Assistant tools enabled: hass_control, hass_get_state")
 
+    # Initialize short-term memory (singleton, persists across restarts)
+    short_term_memory = ShortTermMemory()
+    memory_count = len(short_term_memory.list_keys())
+    if memory_count > 0:
+        logger.info(f"Short-term memory loaded: {memory_count} entries")
+    else:
+        logger.info("Short-term memory initialized (empty)")
+
     # Create agent with CAALLLM and all MCP servers
     assistant = VoiceAssistant(
         caal_llm=caal_llm,
@@ -754,6 +769,7 @@ async def entrypoint(ctx: agents.JobContext) -> None:
         max_turns=runtime["max_turns"],
         hass_tool_definitions=hass_tool_definitions,
         hass_tool_callables=hass_tool_callables,
+        short_term_memory=short_term_memory,
     )
 
     # Create event to wait for session close (BEFORE session.start to avoid race condition)

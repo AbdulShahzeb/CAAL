@@ -48,6 +48,7 @@ from pydantic import BaseModel
 
 from . import registry_cache
 from . import settings as settings_module
+from .memory import ShortTermMemory
 from .settings import validate_url
 
 logger = logging.getLogger(__name__)
@@ -1582,6 +1583,173 @@ async def get_n8n_workflow(workflow_id: str) -> N8nWorkflowDetailResponse:
             status_code=500,
             detail=f"Failed to fetch workflow: {str(e)}",
         )
+
+
+# =============================================================================
+# Short-Term Memory Endpoints
+# =============================================================================
+
+
+class MemoryEntryResponse(BaseModel):
+    """Response body for a single memory entry."""
+
+    key: str
+    value: dict | list | str | int | float | bool | None
+    stored_at: float
+    expires_at: float | None
+    source: str
+
+
+class MemoryListResponse(BaseModel):
+    """Response body for GET /memory endpoint."""
+
+    entries: list[MemoryEntryResponse]
+
+
+class MemoryStoreRequest(BaseModel):
+    """Request body for POST /memory endpoint."""
+
+    key: str
+    value: dict | list | str | int | float | bool | None
+    ttl_seconds: int | None = None
+
+
+class MemoryStoreResponse(BaseModel):
+    """Response body for POST /memory endpoint."""
+
+    status: str
+    key: str
+
+
+class MemoryDeleteResponse(BaseModel):
+    """Response body for DELETE /memory endpoint."""
+
+    status: str
+    key: str
+
+
+class MemoryClearResponse(BaseModel):
+    """Response body for DELETE /memory (clear all) endpoint."""
+
+    status: str
+    cleared_count: int
+
+
+@app.get("/memory", response_model=MemoryListResponse)
+async def get_memory() -> MemoryListResponse:
+    """Get all short-term memory entries.
+
+    Returns:
+        MemoryListResponse with all non-expired entries
+    """
+    memory = ShortTermMemory()
+    entries = memory.get_all()
+
+    return MemoryListResponse(
+        entries=[
+            MemoryEntryResponse(
+                key=e["key"],
+                value=e["value"],
+                stored_at=e["stored_at"],
+                expires_at=e["expires_at"],
+                source=e["source"],
+            )
+            for e in entries
+        ]
+    )
+
+
+@app.get("/memory/{key}", response_model=MemoryEntryResponse)
+async def get_memory_entry(key: str) -> MemoryEntryResponse:
+    """Get a single memory entry by key.
+
+    Args:
+        key: The memory key to retrieve
+
+    Returns:
+        MemoryEntryResponse with the entry data
+
+    Raises:
+        HTTPException: 404 if key not found or expired
+    """
+    memory = ShortTermMemory()
+    entries = memory.get_all()
+
+    # Find the entry with matching key
+    for entry in entries:
+        if entry["key"] == key:
+            return MemoryEntryResponse(
+                key=entry["key"],
+                value=entry["value"],
+                stored_at=entry["stored_at"],
+                expires_at=entry["expires_at"],
+                source=entry["source"],
+            )
+
+    raise HTTPException(status_code=404, detail=f"Key not found: {key}")
+
+
+@app.post("/memory", response_model=MemoryStoreResponse)
+async def store_memory(req: MemoryStoreRequest) -> MemoryStoreResponse:
+    """Store a value in short-term memory.
+
+    Args:
+        req: MemoryStoreRequest with key, value, and optional TTL
+
+    Returns:
+        MemoryStoreResponse with status
+    """
+    memory = ShortTermMemory()
+    memory.store(
+        key=req.key,
+        value=req.value,
+        ttl_seconds=req.ttl_seconds,
+        source="api",
+    )
+
+    logger.info(f"Memory stored via API: {req.key}")
+
+    return MemoryStoreResponse(status="stored", key=req.key)
+
+
+@app.delete("/memory/{key}", response_model=MemoryDeleteResponse)
+async def delete_memory_entry(key: str) -> MemoryDeleteResponse:
+    """Delete a single memory entry.
+
+    Args:
+        key: The memory key to delete
+
+    Returns:
+        MemoryDeleteResponse with status
+
+    Raises:
+        HTTPException: 404 if key not found
+    """
+    memory = ShortTermMemory()
+    deleted = memory.delete(key)
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"Key not found: {key}")
+
+    return MemoryDeleteResponse(status="deleted", key=key)
+
+
+@app.delete("/memory", response_model=MemoryClearResponse)
+async def clear_memory() -> MemoryClearResponse:
+    """Clear all short-term memory entries.
+
+    Returns:
+        MemoryClearResponse with status and count of cleared entries
+    """
+    memory = ShortTermMemory()
+    entries = memory.list_keys()
+    count = len(entries)
+
+    memory.clear()
+
+    logger.info(f"Memory cleared via API: {count} entries removed")
+
+    return MemoryClearResponse(status="cleared", cleared_count=count)
 
 
 # =============================================================================
