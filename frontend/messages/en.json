@@ -211,6 +211,20 @@
     "reload": {
       "tooltip": "Reload tools"
     },
+    "share": {
+      "title": "Share Workflow to Registry",
+      "securityTitle": "Your secrets never leave your network",
+      "securityDescription": "Sanitization happens locally in your browser before submission. Credential IDs are nullified.",
+      "variablesDetected": "Variables detected (will be parameterized):",
+      "credentialsDetected": "Credentials found and being parameterized:",
+      "privateUrlsDetected": "Private network URLs (will be parameterized):",
+      "submissionFailed": "Submission failed",
+      "readyToSubmit": "Ready to submit!",
+      "popupBlockedHint": "Complete your submission in the form. If popup was blocked, click below:",
+      "openFormButton": "Open Submission Form",
+      "preparingSubmission": "Preparing submission...",
+      "continueButton": "Continue to Submission Form"
+    },
     "status": {
       "initialTooltip": "Tool status",
       "toolUsedTooltip": "Tool: {names}",
