@@ -67,33 +67,40 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| OPENAI-01 | TBD | Pending |
-| OPENAI-02 | TBD | Pending |
-| OPENAI-03 | TBD | Pending |
-| OPENAI-04 | TBD | Pending |
-| OPENAI-05 | TBD | Pending |
-| OPENAI-06 | TBD | Pending |
-| OPENAI-07 | TBD | Pending |
-| OPENROUTER-01 | TBD | Pending |
-| OPENROUTER-02 | TBD | Pending |
-| OPENROUTER-03 | TBD | Pending |
-| OPENROUTER-04 | TBD | Pending |
-| OPENROUTER-05 | TBD | Pending |
-| OPENROUTER-06 | TBD | Pending |
-| UI-01 | TBD | Pending |
-| UI-02 | TBD | Pending |
-| UI-03 | TBD | Pending |
-| UI-04 | TBD | Pending |
-| UI-05 | TBD | Pending |
-| WIZARD-01 | TBD | Pending |
-| WIZARD-02 | TBD | Pending |
-| WIZARD-03 | TBD | Pending |
+| OPENAI-01 | Phase 8 | Pending |
+| OPENAI-02 | Phase 8 | Pending |
+| OPENAI-03 | Phase 8 | Pending |
+| OPENAI-04 | Phase 8 | Pending |
+| OPENAI-05 | Phase 10 | Pending |
+| OPENAI-06 | Phase 10 | Pending |
+| OPENAI-07 | Phase 10 | Pending |
+| OPENROUTER-01 | Phase 8 | Pending |
+| OPENROUTER-02 | Phase 10 | Pending |
+| OPENROUTER-03 | Phase 12 | Pending |
+| OPENROUTER-04 | Phase 8 | Pending |
+| OPENROUTER-05 | Phase 8 | Pending |
+| OPENROUTER-06 | Phase 10 | Pending |
+| UI-01 | Phase 12 | Pending |
+| UI-02 | Phase 12 | Pending |
+| UI-03 | Phase 12 | Pending |
+| UI-04 | Phase 12 | Pending |
+| UI-05 | Phase 12 | Pending |
+| WIZARD-01 | Phase 11 | Pending |
+| WIZARD-02 | Phase 11 | Pending |
+| WIZARD-03 | Phase 11 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 21 total
-- Mapped to phases: 0
-- Unmapped: 21 (pending roadmap)
+- Mapped to phases: 21 (100% coverage)
+- Unmapped: 0
+
+**Phase distribution:**
+- Phase 8 (Backend Provider Foundation): 7 requirements
+- Phase 9 (Settings Schema Extension): 0 requirements (infrastructure)
+- Phase 10 (Connection Testing Endpoints): 5 requirements
+- Phase 11 (Setup Wizard Frontend): 3 requirements
+- Phase 12 (Settings Panel UI): 6 requirements
 
 ---
 *Requirements defined: 2025-02-05*
-*Last updated: 2025-02-05 after initial definition*
+*Last updated: 2026-02-05 after roadmap creation*
