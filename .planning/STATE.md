@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2025-02-05)
 ## Current Position
 
 Phase: 8 of 12 (Backend Provider Foundation)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-02-05 — Completed 08-02-PLAN.md (OpenRouter Provider)
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-02-05 — Completed 08-03-PLAN.md (Provider Factory Integration)
 
-Progress: [██░░░░░░░░] 16%
+Progress: [███░░░░░░░] 25%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 5 min
-- Total execution time: 10 min
+- Total plans completed: 3
+- Average duration: 4 min
+- Total execution time: 13 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 08-backend-provider-foundation | 2 | 10 min | 5 min |
+| 08-backend-provider-foundation | 3 | 13 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 08-01 (2 min), 08-02 (8 min)
-- Trend: N/A (early phase)
+- Last 5 plans: 08-01 (2 min), 08-02 (8 min), 08-03 (3 min)
+- Trend: Consistent fast execution
 
 *Updated after each plan completion*
 
@@ -50,6 +50,8 @@ Recent decisions affecting current work:
 - Required API key validation on init for OpenRouter (no env fallback) (08-02)
 - Fixed OPENROUTER_BASE_URL constant for consistency (08-02)
 - Attribution headers for OpenRouter model provider compliance (08-02)
+- Settings keys: openai_* for OpenAI-compatible, openrouter_* for OpenRouter (08-03)
+- OpenRouter API key validation in create_provider_from_settings with env fallback (08-03)
 
 ### Pending Todos
 
@@ -62,5 +64,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 08-02-PLAN.md
+Stopped at: Completed 08-03-PLAN.md (Phase 8 complete)
 Resume file: None
