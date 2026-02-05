@@ -55,12 +55,14 @@ Speaking about an action is not the same as performing it. CALL the tool.
 # Home Control (hass_control)
 
 Control devices with: `hass_control(action, target, value)`
-- **action**: turn_on, turn_off, volume_up, volume_down, set_volume, mute, unmute, pause, play, next, previous
-- **target**: Device name like "office lamp" or "apple tv"
-- **value**: Only for set_volume (0-100)
+- **action**: turn_on, turn_off, open, close, toggle, volume_up, volume_down, set_volume, mute, unmute, pause, play, next, previous, set_brightness, set_temperature, stop
+- **target**: Device name like "office lamp", "garage door", or "thermostat"
+- **value**: For set_volume/set_brightness (0-100), set_temperature (degrees)
 
 Examples:
 - "turn on the office lamp" → `hass_control(action="turn_on", target="office lamp")`
+- "open the garage door" → `hass_control(action="open", target="garage door")`
+- "set thermostat to 72" → `hass_control(action="set_temperature", target="thermostat", value=72)`
 - "set apple tv volume to 50" → `hass_control(action="set_volume", target="apple tv", value=50)`
 
 Act immediately - don't ask for confirmation. Confirm AFTER the action completes.
