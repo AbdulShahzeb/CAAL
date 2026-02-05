@@ -26,22 +26,22 @@ Tool Registry with full i18n support for French and Italian translations.
 
 **Milestone Goal:** Add OpenAI-compatible and OpenRouter LLM providers with full UI integration
 
-#### Phase 8: Backend Provider Foundation
+#### ✅ Phase 8: Backend Provider Foundation — COMPLETE
 **Goal**: Both new LLM providers can stream responses and execute tool calls
 **Depends on**: Nothing (first phase of milestone)
 **Requirements**: OPENAI-01, OPENAI-02, OPENAI-03, OPENAI-04, OPENROUTER-01, OPENROUTER-04, OPENROUTER-05
 **Success Criteria** (what must be TRUE):
-  1. Developer can instantiate OpenAI-compatible provider with custom base URL and API key
-  2. Developer can instantiate OpenRouter provider with API key
-  3. Both providers stream responses correctly in voice conversations
-  4. Both providers execute tool calls (Home Assistant, n8n workflows) successfully
-  5. Provider factory creates OpenAI-compatible and OpenRouter instances from settings
-**Plans**: 3 plans
+  1. ✓ Developer can instantiate OpenAI-compatible provider with custom base URL and API key
+  2. ✓ Developer can instantiate OpenRouter provider with API key
+  3. ✓ Both providers stream responses correctly in voice conversations
+  4. ✓ Both providers execute tool calls (Home Assistant, n8n workflows) successfully
+  5. ✓ Provider factory creates OpenAI-compatible and OpenRouter instances from settings
+**Plans**: 3/3 complete
 
 Plans:
-- [ ] 08-01-PLAN.md — OpenAI-compatible provider implementation
-- [ ] 08-02-PLAN.md — OpenRouter provider implementation
-- [ ] 08-03-PLAN.md — Factory integration for both providers
+- [x] 08-01-PLAN.md — OpenAI-compatible provider implementation
+- [x] 08-02-PLAN.md — OpenRouter provider implementation
+- [x] 08-03-PLAN.md — Factory integration for both providers
 
 #### Phase 9: Settings Schema Extension
 **Goal**: Settings system supports both new providers with proper configuration keys
@@ -114,7 +114,7 @@ Phases execute in numeric order: 8 → 9 → 10 → 11 → 12
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 8. Backend Provider Foundation | v1.2 | 0/3 | Not started | - |
+| 8. Backend Provider Foundation | v1.2 | 3/3 | ✓ Complete | 2026-02-05 |
 | 9. Settings Schema Extension | v1.2 | 0/TBD | Not started | - |
 | 10. Connection Testing Endpoints | v1.2 | 0/TBD | Not started | - |
 | 11. Setup Wizard Frontend | v1.2 | 0/TBD | Not started | - |
