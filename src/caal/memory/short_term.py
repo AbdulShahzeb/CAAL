@@ -191,7 +191,8 @@ class ShortTermMemory:
 
         now = time.time()
         lines = [
-            "Short-term memory (check before asking user for previously-mentioned info):"
+            "[INTERNAL CONTEXT - DO NOT read aloud or announce. "
+            "Use silently when relevant to the conversation.]"
         ]
 
         for key, entry in self._cache["entries"].items():
