@@ -74,21 +74,21 @@ Plans:
 Plans:
 - [x] 10-01-PLAN.md - Backend test endpoints and frontend proxy routes
 
-#### Phase 11: Setup Wizard Frontend
+#### Phase 11: Setup Wizard Frontend — COMPLETE
 **Goal**: First-run users can select and configure both new providers through setup wizard
 **Depends on**: Phase 10
 **Requirements**: WIZARD-01, WIZARD-02, WIZARD-03
 **Success Criteria** (what must be TRUE):
-  1. Setup wizard displays OpenAI-compatible as a provider choice alongside Ollama and Groq
-  2. Setup wizard displays OpenRouter as a provider choice alongside other providers
-  3. OpenAI-compatible form includes base URL, optional API key, and model selection
-  4. OpenRouter form includes API key and model selection with search support
-  5. Setup wizard tests connection before allowing user to proceed to next step
-  6. Failed connection tests show clear error messages with troubleshooting guidance
-**Plans**: 1 plan
+  1. ✓ Setup wizard displays OpenAI-compatible as a provider choice alongside Ollama and Groq
+  2. ✓ Setup wizard displays OpenRouter as a provider choice alongside other providers
+  3. ✓ OpenAI-compatible form includes base URL, optional API key, and model selection
+  4. ✓ OpenRouter form includes API key and model selection with search support
+  5. ✓ Setup wizard tests connection before allowing user to proceed to next step
+  6. ✓ Failed connection tests show clear error messages with troubleshooting guidance
+**Plans**: 1/1 complete
 
 Plans:
-- [ ] 11-01-PLAN.md — Extend SetupData, add provider grid and forms, add i18n translations
+- [x] 11-01-PLAN.md — Extend SetupData, add provider grid and forms, add i18n translations
 
 #### Phase 12: Settings Panel UI
 **Goal**: Users can switch providers and reconfigure settings after initial setup
@@ -117,5 +117,5 @@ Phases execute in numeric order: 8 -> 9 -> 10 -> 11 -> 12
 | 8. Backend Provider Foundation | v1.2 | 3/3 | Complete | 2026-02-05 |
 | 9. Settings Schema Extension | v1.2 | 1/1 | Complete | 2026-02-06 |
 | 10. Connection Testing Endpoints | v1.2 | 1/1 | ✓ Complete | 2026-02-06 |
-| 11. Setup Wizard Frontend | v1.2 | 0/1 | Planned | - |
+| 11. Setup Wizard Frontend | v1.2 | 1/1 | ✓ Complete | 2026-02-06 |
 | 12. Settings Panel UI | v1.2 | 0/TBD | Not started | - |

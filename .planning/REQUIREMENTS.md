@@ -36,9 +36,9 @@ Requirements for milestone v1.2 — Additional LLM Providers.
 
 ### Frontend - Setup Wizard
 
-- [ ] **WIZARD-01**: Setup wizard includes OpenAI-compatible provider choice
-- [ ] **WIZARD-02**: Setup wizard includes OpenRouter provider choice
-- [ ] **WIZARD-03**: Setup wizard tests connection before proceeding
+- [x] **WIZARD-01**: Setup wizard includes OpenAI-compatible provider choice
+- [x] **WIZARD-02**: Setup wizard includes OpenRouter provider choice
+- [x] **WIZARD-03**: Setup wizard tests connection before proceeding
 
 ## Future Requirements
 
@@ -85,9 +85,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UI-03 | Phase 12 | Pending |
 | UI-04 | Phase 12 | Pending |
 | UI-05 | Phase 12 | Pending |
-| WIZARD-01 | Phase 11 | Pending |
-| WIZARD-02 | Phase 11 | Pending |
-| WIZARD-03 | Phase 11 | Pending |
+| WIZARD-01 | Phase 11 | Complete |
+| WIZARD-02 | Phase 11 | Complete |
+| WIZARD-03 | Phase 11 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 21 total
@@ -103,4 +103,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2025-02-05*
-*Last updated: 2026-02-06 after Phase 10 completion*
+*Last updated: 2026-02-06 after Phase 11 completion*
