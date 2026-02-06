@@ -5,10 +5,15 @@
 set -e
 
 CONFIG_DIR="/app/config"
+DATA_DIR="/app/data"
 
 # Ensure config directory exists and is writable by agent
 mkdir -p "$CONFIG_DIR"
 chown agent:agent "$CONFIG_DIR"
+
+# Ensure data directory exists and is writable by agent (memory persistence)
+mkdir -p "$DATA_DIR"
+chown agent:agent "$DATA_DIR"
 
 # settings.json - copy default if missing
 if [ ! -f "$CONFIG_DIR/settings.json" ]; then

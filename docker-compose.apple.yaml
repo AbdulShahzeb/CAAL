@@ -107,6 +107,7 @@ services:
       - ./.env
     environment:
       - LIVEKIT_URL=ws://livekit:7880
+      - CAAL_MEMORY_DIR=/app/data
       # STT + Piper TTS via Speaches container (CPU faster-whisper)
       - SPEACHES_URL=http://speaches:8000
       - PIPER_URL=http://speaches:8000
