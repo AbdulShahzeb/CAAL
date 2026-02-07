@@ -152,6 +152,27 @@ def get_runtime_settings() -> dict:
             user_settings.get("groq_model")
             or os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
         ),
+        # OpenAI-compatible settings
+        "openai_base_url": (
+            user_settings.get("openai_base_url")
+            or os.getenv("OPENAI_BASE_URL", "http://localhost:8000/v1")
+        ),
+        "openai_api_key": (
+            settings.get("openai_api_key") or os.getenv("OPENAI_API_KEY", "")
+        ),
+        "openai_model": (
+            user_settings.get("openai_model")
+            or os.getenv("OPENAI_MODEL", "")
+        ),
+        # OpenRouter settings
+        "openrouter_api_key": (
+            settings.get("openrouter_api_key")
+            or os.getenv("OPENROUTER_API_KEY", "")
+        ),
+        "openrouter_model": (
+            user_settings.get("openrouter_model")
+            or os.getenv("OPENROUTER_MODEL", "openai/gpt-4")
+        ),
         # Shared settings
         "max_turns": settings.get("max_turns", int(os.getenv("OLLAMA_MAX_TURNS", "20"))),
         "tool_cache_size": settings.get("tool_cache_size", int(os.getenv("TOOL_CACHE_SIZE", "3"))),
@@ -500,14 +521,21 @@ async def entrypoint(ctx: agents.JobContext) -> None:
         logger.info(f"  TTS: Piper ({actual_piper_voice})")
     else:
         logger.info(f"  TTS: Kokoro ({runtime['tts_voice_kokoro']})")
-    if runtime["llm_provider"] == "ollama":
+    llm_provider = runtime["llm_provider"]
+    if llm_provider == "ollama":
         logger.info(
             f"  LLM: Ollama ({runtime['ollama_model']}, "
             f"think={runtime['think']}, num_ctx={runtime['num_ctx']})"
         )
-    else:
+    elif llm_provider == "groq":
+        logger.info(f"  LLM: Groq ({runtime['groq_model']})")
+    elif llm_provider == "openai_compatible":
+        model = runtime.get("openai_model", "?")
+        url = runtime.get("openai_base_url", "?")
+        logger.info(f"  LLM: OpenAI-compatible ({model}, {url})")
+    elif llm_provider == "openrouter":
         logger.info(
-            f"  LLM: Groq ({runtime['groq_model']})"
+            f"  LLM: OpenRouter ({runtime.get('openrouter_model', '?')})"
         )
     logger.info(f"  MCP: {list(mcp_servers.keys()) or 'None'}")
     logger.info(
