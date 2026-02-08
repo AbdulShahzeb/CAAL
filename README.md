@@ -78,7 +78,7 @@ To avoid the browser certificate warning, trust the auto-generated cert:
 ```bash
 ./trust-cert.sh
 ```
-This works on macOS and Linux (Debian/Ubuntu, RHEL/Fedora, Chrome, Firefox). Pass `--yes` to skip the confirmation prompt. On Apple Silicon, `start-apple.sh` runs it automatically.
+This works on macOS and Linux (Debian/Ubuntu, RHEL/Fedora, Arch, Chrome, Firefox). Pass `--yes` to skip the confirmation prompt. On Apple Silicon, `start-apple.sh` runs it automatically.
 
 Alternatively, for browser-trusted certs use [mkcert](https://github.com/FiloSottile/mkcert):
 ```bash
