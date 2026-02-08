@@ -233,6 +233,11 @@ fi
 log "Starting Docker services..."
 docker compose -f docker-compose.apple.yaml up -d
 
+# Trust certificate if not already trusted
+if [ -f "$SCRIPT_DIR/trust-cert.sh" ]; then
+    "$SCRIPT_DIR/trust-cert.sh"
+fi
+
 # Wait for services
 printf "${GREEN}[CAAL]${NC} Waiting for services"
 for i in {1..5}; do
