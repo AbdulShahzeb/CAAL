@@ -74,7 +74,13 @@ Open `https://YOUR_SERVER_IP:3443` and complete the setup wizard.
 
 HTTPS is enabled by default with auto-generated self-signed certificates. This is required because browsers block microphone access on non-`localhost` HTTP.
 
-For browser-trusted certs (no warnings), use [mkcert](https://github.com/FiloSottile/mkcert):
+To avoid the browser certificate warning, trust the auto-generated cert:
+```bash
+./trust-cert.sh
+```
+This works on macOS and Linux (Debian/Ubuntu, RHEL/Fedora, Chrome, Firefox). Pass `--yes` to skip the confirmation prompt. On Apple Silicon, `start-apple.sh` runs it automatically.
+
+Alternatively, for browser-trusted certs use [mkcert](https://github.com/FiloSottile/mkcert):
 ```bash
 mkcert -install && mkcert 192.168.1.100
 mkdir -p certs && mv 192.168.1.100.pem certs/server.crt && mv 192.168.1.100-key.pem certs/server.key

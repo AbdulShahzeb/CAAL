@@ -198,7 +198,8 @@ services:
           openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
             -keyout /etc/nginx/certs/server.key \
             -out /etc/nginx/certs/server.crt \
-            -subj "/CN=$${CAAL_HOST_IP:-localhost}" 2>/dev/null
+            -subj "/CN=$${CAAL_HOST_IP:-localhost}" \
+            -addext "subjectAltName=DNS:localhost,IP:$${CAAL_HOST_IP:-127.0.0.1},IP:127.0.0.1" 2>/dev/null
           echo "Self-signed certificate generated for $${CAAL_HOST_IP:-localhost}"
         else
           echo "Using existing certificate"
