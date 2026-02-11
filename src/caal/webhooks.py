@@ -1612,6 +1612,7 @@ class MemoryStoreRequest(BaseModel):
     key: str
     value: dict | list | str | int | float | bool | None
     ttl_seconds: int | None = None
+    source: str | None = None
 
 
 class MemoryStoreResponse(BaseModel):
@@ -1707,7 +1708,7 @@ async def store_memory(req: MemoryStoreRequest) -> MemoryStoreResponse:
         key=req.key,
         value=req.value,
         ttl_seconds=req.ttl_seconds,
-        source="api",
+        source=req.source or "api",
     )
 
     logger.info(f"Memory stored via API: {req.key}")
