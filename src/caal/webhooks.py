@@ -1834,3 +1834,12 @@ async def prewarm() -> PrewarmResponse:
         status="started",
         message="Model preloading started in background",
     )
+
+
+# =============================================================================
+# Chat API
+# =============================================================================
+
+from .chat.api import router as chat_router  # noqa: E402
+
+app.include_router(chat_router)
