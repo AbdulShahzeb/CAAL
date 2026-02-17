@@ -13,14 +13,23 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from .integrations import (
+    MEMORY_SHORT_TOOL_DEF,
+    WEB_SEARCH_TOOL_DEF,
     create_hass_tools,
     detect_hass_tool_prefix,
     discover_n8n_workflows,
+    execute_memory_short,
+    execute_web_search,
     initialize_mcp_servers,
 )
 from .integrations.mcp_loader import MCPServerConfig
+
+if TYPE_CHECKING:
+    from .llm.providers import LLMProvider
+    from .memory import ShortTermMemory
 
 logger = logging.getLogger(__name__)
 
@@ -66,11 +75,13 @@ class ToolContext:
 
     _discover_tools() reads:
         agent._llm_tools_cache, agent._tools, agent._caal_mcp_servers,
-        agent._n8n_workflow_tools, agent._hass_tool_definitions
+        agent._n8n_workflow_tools, agent._hass_tool_definitions,
+        agent._agent_tool_definitions
 
     _execute_single_tool() reads:
         agent._hass_tool_callables, agent._n8n_workflow_name_map,
         agent._n8n_base_url, agent._caal_mcp_servers
+        + hasattr(agent, tool_name) for agent methods (memory_short, web_search)
 
     MCP connections are lazily initialized on first async use to avoid
     the "cancel scope in different task" issue when initializing sync.
@@ -81,6 +92,8 @@ class ToolContext:
         *,
         mcp_configs: list[MCPServerConfig] | None = None,
         on_tool_status: Callable | None = None,
+        short_term_memory: ShortTermMemory | None = None,
+        provider: LLMProvider | None = None,
     ) -> None:
         self._tools: list = []  # No @function_tool methods
         self._mcp_configs = mcp_configs or []
@@ -91,8 +104,17 @@ class ToolContext:
         self._hass_tool_definitions: list[dict] = []
         self._hass_tool_callables: dict = {}
         self._on_tool_status = on_tool_status
+        self._on_usage = None
         self._llm_tools_cache: list[dict] | None = None
         self._mcp_initialized = False
+
+        # Agent-level tools (memory_short, web_search)
+        self._short_term_memory = short_term_memory
+        self._provider = provider
+        self._agent_tool_definitions: list[dict] = [
+            MEMORY_SHORT_TOOL_DEF,
+            WEB_SEARCH_TOOL_DEF,
+        ]
 
     async def ensure_mcp_initialized(self) -> None:
         """Lazily initialize MCP servers, n8n workflows, and HASS tools."""
@@ -151,3 +173,30 @@ class ToolContext:
             logger.error(f"MCP lazy init error: {e}", exc_info=True)
 
         self._mcp_initialized = True
+
+    # -----------------------------------------------------------------
+    # Agent-level tools (called via _execute_single_tool hasattr path)
+    # -----------------------------------------------------------------
+
+    async def memory_short(
+        self,
+        action: str,
+        key: str = "",
+        value: str = "",
+        ttl: str = "",
+    ) -> str:
+        """Delegate to shared execute_memory_short()."""
+        return await execute_memory_short(
+            memory=self._short_term_memory,
+            action=action,
+            key=key,
+            value=value,
+            ttl=ttl,
+        )
+
+    async def web_search(self, query: str) -> str:
+        """Delegate to shared execute_web_search()."""
+        return await execute_web_search(
+            query=query,
+            provider=self._provider,
+        )

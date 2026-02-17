@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 import ollama
 
-from .base import LLMProvider, LLMResponse, ToolCall
+from .base import LLMProvider, LLMResponse, TokenUsage, ToolCall
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -60,6 +60,7 @@ class OllamaProvider(LLMProvider):
 
         # Create client with custom host if provided
         self._client = ollama.Client(host=base_url) if base_url else ollama.Client()
+        self._last_usage: TokenUsage | None = None
 
         logger.debug(
             f"OllamaProvider initialized: {model} "
@@ -149,7 +150,18 @@ class OllamaProvider(LLMProvider):
         if hasattr(response, "message") and hasattr(response.message, "content"):
             content = response.message.content
 
-        return LLMResponse(content=content, tool_calls=tool_calls)
+        # Capture token usage from Ollama response
+        usage = None
+        prompt_tokens = getattr(response, "prompt_eval_count", None)
+        completion_tokens = getattr(response, "eval_count", None)
+        if prompt_tokens is not None:
+            usage = TokenUsage(
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens or 0,
+            )
+            self._last_usage = usage
+
+        return LLMResponse(content=content, tool_calls=tool_calls, usage=usage)
 
     async def chat_stream(
         self,
@@ -189,6 +201,16 @@ class OllamaProvider(LLMProvider):
             if hasattr(chunk, "message") and hasattr(chunk.message, "content"):
                 if chunk.message.content:
                     yield chunk.message.content
+
+            # Last chunk (done=True) carries token usage
+            if getattr(chunk, "done", False):
+                prompt_tokens = getattr(chunk, "prompt_eval_count", None)
+                completion_tokens = getattr(chunk, "eval_count", None)
+                if prompt_tokens is not None:
+                    self._last_usage = TokenUsage(
+                        prompt_tokens=prompt_tokens,
+                        completion_tokens=completion_tokens or 0,
+                    )
 
     # parse_tool_arguments: Use default (Ollama returns dict)
     # format_tool_result: Use default (no name field needed)

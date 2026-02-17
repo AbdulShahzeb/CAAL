@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
-__all__ = ["LLMProvider", "LLMResponse", "ToolCall"]
+__all__ = ["LLMProvider", "LLMResponse", "TokenUsage", "ToolCall"]
 
 
 @dataclass
@@ -27,11 +27,20 @@ class ToolCall:
 
 
 @dataclass
+class TokenUsage:
+    """Token counts from an LLM API call."""
+
+    prompt_tokens: int
+    completion_tokens: int
+
+
+@dataclass
 class LLMResponse:
     """Normalized LLM response representation."""
 
     content: str | None
     tool_calls: list[ToolCall]
+    usage: TokenUsage | None = None
 
 
 class LLMProvider(ABC):

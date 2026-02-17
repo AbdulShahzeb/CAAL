@@ -63,9 +63,8 @@ class ToolResponseInfo(BaseModel):
 
 class DebugInfo(BaseModel):
     tool_responses: list[ToolResponseInfo]
-    total_tokens_approx: int  # Full LLM input: messages + tool definitions
-    context_tokens_approx: int
-    tool_defs_tokens: int
+    prompt_tokens: int  # Input tokens the LLM saw (real from Ollama, estimated otherwise)
+    prompt_tokens_source: str  # "ollama" or "estimate"
     turn_number: int
     cached_data_arrays: int
 
@@ -231,9 +230,13 @@ async def _ensure_initialized() -> None:
         _short_term_memory = ShortTermMemory()
         _short_term_memory.reload()
 
-        # Initialize tool context (MCP servers, n8n, HASS)
+        # Initialize tool context (MCP servers, n8n, HASS, memory, web_search)
         mcp_configs = load_mcp_config()
-        _tool_context = ToolContext(mcp_configs=mcp_configs)
+        _tool_context = ToolContext(
+            mcp_configs=mcp_configs,
+            short_term_memory=_short_term_memory,
+            provider=_llm.provider_instance,
+        )
         await _tool_context.ensure_mcp_initialized()
 
         # Session manager with background cleanup
@@ -265,12 +268,12 @@ def _build_debug_info(
     cache_ts_before: set[float],
     memory: ShortTermMemory | None,
     tool_context: ToolContext | None,
+    provider_usage=None,
 ) -> DebugInfo:
     """Build verbose debug info matching what llm_node sees in context.
 
-    Approximates the context that _build_messages_from_context constructs:
-    system prompt + tool data cache + short-term memory + chat history.
-    Also includes tool definitions sent alongside messages.
+    Uses real token counts from Ollama when available (prompt_eval_count),
+    falls back to word-based estimation for other providers.
     """
     # Tool responses from this turn (entries with timestamps not in snapshot)
     new_cache_entries = [
@@ -289,37 +292,38 @@ def _build_debug_info(
             )
         )
 
-    # Approximate context tokens (what the LLM sees in messages)
-    context_parts: list[str] = [prompt]
+    # Token count: prefer real counts from Ollama, fall back to estimate
+    if provider_usage and hasattr(provider_usage, "prompt_tokens"):
+        prompt_tokens = provider_usage.prompt_tokens
+        source = "ollama"
+    else:
+        # Estimate from message content + tool definitions
+        context_parts: list[str] = [prompt]
 
-    # Tool data cache context (all cached entries, not just this turn)
-    cache_context = session.tool_data_cache.get_context_message()
-    if cache_context:
-        context_parts.append(cache_context)
+        cache_context = session.tool_data_cache.get_context_message()
+        if cache_context:
+            context_parts.append(cache_context)
 
-    # Short-term memory context
-    if memory:
-        mem_context = memory.get_context_message()
-        if mem_context:
-            context_parts.append(mem_context)
+        if memory:
+            mem_context = memory.get_context_message()
+            if mem_context:
+                context_parts.append(mem_context)
 
-    # Chat messages (after sliding window)
-    for msg in session.get_messages():
-        context_parts.append(msg.get("content", ""))
+        for msg in session.get_messages():
+            context_parts.append(msg.get("content", ""))
 
-    context_tokens_approx = _estimate_tokens(" ".join(context_parts))
+        prompt_tokens = _estimate_tokens(" ".join(context_parts))
 
-    # Tool definitions (sent as `tools` parameter alongside messages)
-    tool_defs_tokens = 0
-    if tool_context and tool_context._llm_tools_cache:
-        tool_defs_str = json.dumps(tool_context._llm_tools_cache)
-        tool_defs_tokens = _estimate_tokens(tool_defs_str)
+        if tool_context and tool_context._llm_tools_cache:
+            tool_defs_str = json.dumps(tool_context._llm_tools_cache)
+            prompt_tokens += _estimate_tokens(tool_defs_str)
+
+        source = "estimate"
 
     return DebugInfo(
         tool_responses=tool_responses,
-        total_tokens_approx=context_tokens_approx + tool_defs_tokens,
-        context_tokens_approx=context_tokens_approx,
-        tool_defs_tokens=tool_defs_tokens,
+        prompt_tokens=prompt_tokens,
+        prompt_tokens_source=source,
         turn_number=len(session.messages) // 2,  # user+assistant pairs
         cached_data_arrays=len(session.tool_data_cache._cache),
     )
@@ -372,6 +376,13 @@ async def chat(req: ChatRequest) -> ChatResponse:
             for name, param in zip(names, params):
                 tool_calls_log.append(ToolCallInfo(tool=name, args=param or {}))
 
+    # Capture real token usage from provider (Ollama reports exact counts)
+    captured_usage = None
+
+    def _capture_usage(usage) -> None:
+        nonlocal captured_usage
+        captured_usage = usage
+
     # Snapshot cache timestamps before call (for verbose tool_responses diff)
     # Can't use len() — ToolDataCache evicts oldest when full, so length
     # stays constant after max_entries and _cache[len_before:] returns [].
@@ -380,8 +391,9 @@ async def chat(req: ChatRequest) -> ChatResponse:
     # Call llm_node — same code path as voice
     response_chunks: list[str] = []
     async with _request_lock:
-        # Set callback while we hold the lock (safe — one request at a time)
+        # Set callbacks while we hold the lock (safe — one request at a time)
         _tool_context._on_tool_status = _capture_tool_status
+        _tool_context._on_usage = _capture_usage
         try:
             async for chunk in llm_node(
                 agent=_tool_context,
@@ -396,6 +408,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
             await asyncio.sleep(0)
         finally:
             _tool_context._on_tool_status = None
+            _tool_context._on_usage = None
 
     response_text = "".join(response_chunks)
     tool_calls = list(tool_calls_log)
@@ -412,6 +425,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
             cache_ts_before=cache_ts_before,
             memory=_short_term_memory,
             tool_context=_tool_context,
+            provider_usage=captured_usage,
         )
 
     return ChatResponse(

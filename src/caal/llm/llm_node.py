@@ -174,6 +174,7 @@ async def llm_node(
                     if response.content:
                         # Don't clear tool status — keep indicator showing
                         # which tools were used for this response
+                        _emit_usage(agent, provider)
                         yield strip_markdown_for_tts(response.content)
                         return
                     break  # No content either, fall through to streaming
@@ -243,9 +244,19 @@ async def llm_node(
             async for chunk in provider.chat_stream(messages=messages):
                 yield strip_markdown_for_tts(chunk)
 
+        # Report token usage from final LLM call
+        _emit_usage(agent, provider)
+
     except Exception as e:
         logger.error(f"Error in llm_node: {e}", exc_info=True)
         yield f"I encountered an error: {e}"
+
+
+def _emit_usage(agent, provider) -> None:
+    """Report token usage from provider to agent callback if available."""
+    last_usage = getattr(provider, "_last_usage", None)
+    if last_usage and hasattr(agent, "_on_usage") and agent._on_usage:
+        agent._on_usage(last_usage)
 
 
 def _strip_tool_messages(messages: list[dict]) -> list[dict]:
@@ -461,6 +472,10 @@ async def _discover_tools(agent) -> list[dict] | None:
     # Add Home Assistant tools (only if HASS is connected)
     if hasattr(agent, "_hass_tool_definitions") and agent._hass_tool_definitions:
         tools.extend(agent._hass_tool_definitions)
+
+    # Add agent-level tools (memory_short, web_search — non-LiveKit callers)
+    if hasattr(agent, "_agent_tool_definitions") and agent._agent_tool_definitions:
+        tools.extend(agent._agent_tool_definitions)
 
     # Cache tools on agent and return
     result = tools if tools else None
