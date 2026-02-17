@@ -68,6 +68,7 @@ async def discover_n8n_workflows(n8n_mcp, base_url: str) -> tuple[list[dict], di
 
             # Try to get detailed description from webhook notes
             description = ""
+            schema = None
             try:
                 # Check cache first
                 if wf_id not in _workflow_details_cache:
@@ -78,20 +79,28 @@ async def discover_n8n_workflows(n8n_mcp, base_url: str) -> tuple[list[dict], di
                     _workflow_details_cache[wf_id] = parse_mcp_result(details_result)
 
                 workflow_details = _workflow_details_cache[wf_id]
-                description = extract_webhook_description(workflow_details)
+                description, schema = extract_webhook_description(
+                    workflow_details
+                )
 
             except Exception as e:
                 logger.warning(f"Failed to get details for {wf_name}: {e}")
 
             # Fallback to root description or generic message
             if not description:
-                description = workflow.get("description") or f"Execute {tool_name} workflow"
+                description = (
+                    workflow.get("description")
+                    or f"Execute {tool_name} workflow"
+                )
 
-            # Flexible schema - LLM uses description to determine parameters
-            parameters = {
-                "type": "object",
-                "additionalProperties": True  # Accept any properties
-            }
+            # Use structured schema if available, otherwise open schema
+            if schema:
+                parameters = build_parameters_from_schema(schema)
+            else:
+                parameters = {
+                    "type": "object",
+                    "additionalProperties": True,
+                }
 
             # Create Ollama tool definition
             tool = {
@@ -136,32 +145,108 @@ async def execute_n8n_workflow(base_url: str, workflow_name: str, arguments: dic
             raise
 
 
-def extract_webhook_description(workflow_details: dict) -> str:
-    """Extract description from webhook node notes.
+def extract_webhook_description(
+    workflow_details: dict,
+) -> tuple[str, dict | None]:
+    """Extract description and optional schema from webhook node notes.
 
-    Searches for webhook trigger node and extracts its notes field,
-    which contains the workflow description and parameter documentation.
+    Notes format (new — with ---schema):
+        Track flights or view airport departures/arrivals
+
+        ---schema
+        {
+          "action": {"type": "string", "enum": ["track", "departures"]},
+          "flight_iata": {"type": "string", "description": "IATA code"}
+        }
+
+    Notes format (legacy — prose only):
+        Full prose description with inline parameter docs...
 
     Args:
-        workflow_details: Full workflow structure from get_workflow_details MCP call
+        workflow_details: Full workflow structure from get_workflow_details
 
     Returns:
-        Description string for CAAL tool discovery, or empty string if not found
+        Tuple of (description, schema_dict_or_None).
+        schema_dict keys are param names, values have type/enum/description.
     """
-    # Find webhook node in workflow
+    notes = _get_webhook_notes(workflow_details)
+    if not notes:
+        return "", None
+
+    # Split on ---schema fence
+    if "---schema" in notes:
+        parts = notes.split("---schema", 1)
+        description = parts[0].strip()
+        schema_text = parts[1].strip()
+        try:
+            schema = json.loads(schema_text)
+            return description, schema
+        except json.JSONDecodeError as e:
+            logger.warning(
+                f"Failed to parse ---schema JSON: {e}. "
+                "Falling back to prose description."
+            )
+            # Fall through to return full notes as description
+
+    return notes, None
+
+
+def _get_webhook_notes(workflow_details: dict) -> str:
+    """Find webhook trigger node and return its notes field."""
     for node in workflow_details.get("workflow", {}).get("nodes", []):
         if node.get("type") == "n8n-nodes-base.webhook":
-            # Extract notes field
             notes = node.get("notes", "").strip()
             if notes:
                 return notes
-
-            # Fallback: use node description if available
             node_desc = node.get("description", "").strip()
             if node_desc:
                 return node_desc
-
     return ""
+
+
+def build_parameters_from_schema(schema: dict) -> dict:
+    """Convert ---schema JSON into OpenAI-format parameters object.
+
+    Input (from webhook notes):
+        {
+          "action": {"type": "string", "enum": [...], "required": true},
+          "flight_iata": {"type": "string", "description": "...", "for": ["track"]}
+        }
+
+    Output (OpenAI tool format):
+        {
+          "type": "object",
+          "properties": {
+            "action": {"type": "string", "enum": [...]},
+            "flight_iata": {"type": "string", "description": "..."}
+          },
+          "required": ["action"]
+        }
+
+    Strips `for` (CAAL metadata) and `required` (moved to top-level array).
+    """
+    properties = {}
+    required = []
+
+    for param_name, param_def in schema.items():
+        # Copy param definition, stripping CAAL-only fields
+        clean_def = {
+            k: v for k, v in param_def.items()
+            if k not in ("required", "for")
+        }
+        properties[param_name] = clean_def
+
+        # Collect required params
+        if param_def.get("required") is True:
+            required.append(param_name)
+
+    result: dict = {
+        "type": "object",
+        "properties": properties,
+    }
+    if required:
+        result["required"] = required
+    return result
 
 
 def sanitize_tool_name(name: str) -> str:
