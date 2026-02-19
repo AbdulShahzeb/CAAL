@@ -212,6 +212,32 @@ class OllamaProvider(LLMProvider):
                         completion_tokens=completion_tokens or 0,
                     )
 
+    def prepare_tools(
+        self,
+        tools: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Strip descriptions for FunctionGemma models.
+
+        Ollama's FunctionGemma renderer includes description fields in the
+        prompt template. A 270M model wastes capacity on verbose prose —
+        it only needs the schema (name, parameters) for routing.
+        """
+        if "functiongemma" not in self._model.lower():
+            return tools
+
+        stripped = []
+        for tool in tools:
+            func = tool.get("function", {})
+            stripped.append({
+                "type": tool.get("type", "function"),
+                "function": {
+                    "name": func.get("name", ""),
+                    "description": "",
+                    "parameters": func.get("parameters", {}),
+                },
+            })
+        return stripped
+
     # parse_tool_arguments: Use default (Ollama returns dict)
     # format_tool_result: Use default (no name field needed)
 

@@ -109,6 +109,25 @@ class LLMProvider(ABC):
         """
         ...
 
+    def prepare_tools(
+        self,
+        tools: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Prepare tool definitions for this provider's model.
+
+        Override to modify tool definitions before they're sent to the model.
+        For example, stripping descriptions for models that only need schemas.
+
+        Default implementation returns tools unchanged.
+
+        Args:
+            tools: List of tool definitions in OpenAI format
+
+        Returns:
+            Possibly modified list of tool definitions
+        """
+        return tools
+
     def parse_tool_arguments(self, arguments: Any) -> dict[str, Any]:
         """Parse tool call arguments to dict.
 

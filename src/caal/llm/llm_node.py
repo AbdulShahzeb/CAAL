@@ -115,7 +115,7 @@ async def llm_node(
         )
 
         # Discover tools from agent and MCP servers
-        tools = await _discover_tools(agent)
+        tools = await _discover_tools(agent, provider)
 
         # If tools available, loop non-streaming calls to support chaining
         # Model can call tool A → get result → call tool B → get result → text
@@ -392,11 +392,17 @@ def _build_messages_from_context(
     return messages
 
 
-async def _discover_tools(agent) -> list[dict] | None:
+async def _discover_tools(agent, provider: LLMProvider | None = None) -> list[dict] | None:
     """Discover tools from agent methods and MCP servers.
 
     Tools are cached on the agent instance after first discovery to avoid
     redundant MCP API calls on every user utterance.
+
+    Args:
+        agent: The agent instance (VoiceAssistant or ToolContext)
+        provider: LLM provider — used to call prepare_tools() for
+            model-specific tool transformations (e.g. stripping descriptions
+            for FunctionGemma)
     """
     # Return cached tools if available
     if hasattr(agent, "_llm_tools_cache") and agent._llm_tools_cache is not None:
@@ -476,6 +482,11 @@ async def _discover_tools(agent) -> list[dict] | None:
     # Add agent-level tools (memory_short, web_search — non-LiveKit callers)
     if hasattr(agent, "_agent_tool_definitions") and agent._agent_tool_definitions:
         tools.extend(agent._agent_tool_definitions)
+
+    # Let provider transform tools for its model (e.g. strip descriptions
+    # for FunctionGemma).  Applied once before caching.
+    if tools and provider is not None:
+        tools = provider.prepare_tools(tools)
 
     # Cache tools on agent and return
     result = tools if tools else None
