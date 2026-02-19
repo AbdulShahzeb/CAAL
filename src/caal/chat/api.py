@@ -29,6 +29,7 @@ from .. import CAALLLM
 from .. import settings as settings_module
 from ..context import ChatContext, ToolContext
 from ..integrations import load_mcp_config
+from ..integrations.n8n import clear_caches as clear_n8n_caches
 from ..llm import llm_node
 from ..memory import ShortTermMemory
 from .session import ChatSession, ChatSessionManager
@@ -488,8 +489,9 @@ async def reload_chat() -> ReloadResponse:
         _prompt = None
         _short_term_memory = None
 
-    # Force settings reload from disk before re-init
+    # Force settings + n8n cache reload before re-init
     settings_module.reload_settings()
+    clear_n8n_caches()
 
     # Re-initialize from current settings
     await _ensure_initialized()
