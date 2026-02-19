@@ -659,6 +659,10 @@ async def entrypoint(ctx: agents.JobContext) -> None:
                 # Clear agent's internal caches
                 assistant._ollama_tools_cache = None
 
+                # Clear n8n module-level cache so fresh notes are fetched
+                from caal.integrations.n8n import clear_caches as clear_n8n_caches
+                clear_n8n_caches()
+
                 # Re-discover n8n workflows if MCP is available
                 n8n_mcp = assistant._caal_mcp_servers.get("n8n")
                 if n8n_mcp and assistant._n8n_base_url:
